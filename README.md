@@ -7,6 +7,20 @@ This is a fork of [jasoncoon's esp8266 fastled webserver](https://github.com/jas
 
 
 
+**New:** Windows application to sync the LED devices with music. Completely optional but it's awesome. But it's just the first prototype and very experimental. Software and docs still work in progress.
+
+https://github.com/NimmLor/IoT-Audio-Visualization-Center 
+
+
+
+Can be downloaded [here](https://github.com/NimmLor/IoT-Audio-Visualization-Center/releases).
+
+![screenshot_alpha](C:\Repos\esp8266-fastled-iot-webserver\screenshot_alpha.jpg)
+
+https://github.com/NimmLor/IoT-Audio-Visualization-Center
+
+
+
 ## What happened here?
 
 All of my recent project were merged into one including most of the features. A new and optional Windows application allows to sync the LEDs to a Windows audio source of your choice.
@@ -65,7 +79,7 @@ All of my recent project were merged into one including most of the features. A 
 ### 07.05.2020, Major Code rewrite and merge of projects, audio visualization
 
 - **New features:**
-  - **Audio Visualization with a Windows Desktop Application (C#, WPF)**
+  - **Audio Visualization with a Windows Desktop Application (C#, WPF)** [here](https://github.com/NimmLor/IoT-Audio-Visualization-Center)
   - multicast DNS by @WarDrake
   - OTA Support
   - MQTT/Homeassistant integration by @WarDrake
