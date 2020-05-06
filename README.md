@@ -1,18 +1,76 @@
-# Nanoleaf Web Server
+# ESP8266 FastLED IoT Webserver
 
 <a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/graphs/contributors" alt="Contributors">
         <img src="https://img.shields.io/github/contributors/NimmLor/esp8266-nanoleaf-webserver" /></a>
 
+This is a fork of [jasoncoon's esp8266 fastled webserver](https://github.com/jasoncoon/esp8266-fastled-webserver) that was adapted to control the colors of my  [LED-Projects](https://www.thingiverse.com/Surrbradl08/designs).
 
 
 
-This is a fork of [jasoncoon's esp8266 fastled webserver](https://github.com/jasoncoon/esp8266-fastled-webserver) that was adapted to control the colors of my  [DIY-Nanoleaf Replica](https://www.thingiverse.com/thing:3354082).
+## What happened here?
 
-[![Nanoleafs](https://github.com/NimmLor/esp8266-nanoleaf-webserver/blob/master/gallery/rgb_preview2.gif?raw=true)](https://www.thingiverse.com/thing:3354082)
+All of my recent project were merged into one including most of the features. A new and optional Windows application allows to sync the LEDs to a Windows audio source of your choice.
+
+
+
+### Supported Devices
+
+**Generic LED-Strip**, just a regular LED-Strip without special hardware
+
+  * Easiest: 5V WS2812B LED-Strip:		https://s.click.aliexpress.com/e/_dZ1hCJ7
+  * (Long Ranges) 12V WS2811 LED-Strip:	https://s.click.aliexpress.com/e/_d7Ehe3L
+  * (High-Speed) 5V SK9822 LED-Strip:		https://s.click.aliexpress.com/e/_d8pzc89
+  * (Expensive) 5V APA102 LED-Strip:		https://s.click.aliexpress.com/e/_Bf9wVZUD
+  * (Flexible) 5V WS2812 S LED-Strip:		https://s.click.aliexpress.com/e/_d6XxPOH
+  * Wemos D1 Mini:						https://s.click.aliexpress.com/e/_dTVGMGl
+  * 5V Power Supply:						https://s.click.aliexpress.com/e/_dY5zCWt
+  * Solderless LED-Connector:				https://s.click.aliexpress.com/e/_dV4rsjF
+  * 3D-Printed Wemos-D1 case:				https://www.thingiverse.com/thing:3544576
+
+**LED-Matrix**, with a flexible LED-Matrix you can display the audio like a Audio Visualizer
+* Flexible WS2812 Matrix:				https://s.click.aliexpress.com/e/_d84R5kp
+	
+* Wemos D1 Mini:						https://s.click.aliexpress.com/e/_dTVGMGl
+	
+* 5V Power Supply:						https://s.click.aliexpress.com/e/_dY5zCWt
+	
+
+**3D-Printed 7-Segment Clock**, display the time, syncs with a ntp server of your choice
+
+* unfortunately the "thing's" description isn't updated yet to the new standalone system
+	
+* Project link, small version:			https://www.thingiverse.com/thing:3117494
+	
+* Project link, large version:			https://www.thingiverse.com/thing:2968056
+
+**3D-Printed Desk Lamp**, a Lamp that reacts to sound for your desk
+
+* Project link, twisted version:		https://www.thingiverse.com/thing:4129249
+* Project link, round version:			https://www.thingiverse.com/thing:3676533
+
+**3D-Printed Nanoleafs**, a Nanoleaf clone that can be made for cheap
+
+* Project link:													https://www.thingiverse.com/thing:3354082
+	
+* 5: 3D-Printed Animated RGB Logos
+	
+* Project link, Twenty-One-Pilots Logo:		https://www.thingiverse.com/thing:3523487
+	
+* Project link, Thingiverse Logo:			https://www.thingiverse.com/thing:3531086
 
 
 
 ## Changelog
+
+### 07.05.2020, Major Code rewrite and merge of projects, audio visualization
+
+- **New features:**
+  - **Audio Visualization with a Windows Desktop Application (C#, WPF)**
+  - multicast DNS by @WarDrake
+  - OTA Support
+  - MQTT/Homeassistant integration by @WarDrake
+  - Serial Ambilight for usage behind a TV
+  - Support of Desk Lamp, 7-Segment Clock, Animated RGB Logos, Generic LED-Strip
 
 ### 01.02.2020, Native Alexa Update
 

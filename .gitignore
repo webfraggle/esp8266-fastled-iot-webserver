@@ -14,7 +14,7 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
+
 
 # Fortran module files
 *.mod
@@ -42,3 +42,5 @@ Release/
 .vs/
 Secrets.h
 CppProperties.json
+Debug/
+fast/

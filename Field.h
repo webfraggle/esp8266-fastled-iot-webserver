@@ -19,6 +19,7 @@
 typedef String (*FieldSetter)(String);
 typedef String (*FieldGetter)();
 
+
 const String NumberFieldType = "Number";
 const String BooleanFieldType = "Boolean";
 const String SelectFieldType = "Select";
@@ -97,9 +98,6 @@ String getFieldsJson(FieldList fields, uint8_t count) {
     if (i < count - 1)
       json += ",";
   }
-
-  json += "]";
-
   return json;
 }
 

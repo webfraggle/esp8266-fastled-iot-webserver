@@ -1,3 +1,9 @@
+# Rewrite in progress
+
+
+
+
+
 The software runs on the ESP8266. The web app is stored in SPIFFS (on-board flash memory). I've forked [jasoncoon's esp8266 fastled webserver](https://github.com/jasoncoon/esp8266-fastled-webserver) and added some extra functionality, made a proper config area and created custom patterns for the lamp.
 Amazon Alexa support and Node-RED integration will follow soon.
 
