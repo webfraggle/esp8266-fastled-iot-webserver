@@ -150,7 +150,9 @@ Web App
 
 ![Webinterface](https://github.com/NimmLor/esp8266-nanoleaf-webserver/blob/master/gallery/interface.jpg?raw=true)
 
-The web app is stored in SPIFFS (on-board flash memory).
+![Webinterface](web_ui.jpg?raw=true)
+
+The web app is stored in SPIFFS (on-board flash memory) and has around 400kb. All stylsheets/js used are also stored in the spiffs, so no internet connection is required to view the webpage correctly.
 
 
 
