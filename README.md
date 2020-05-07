@@ -15,7 +15,7 @@ https://github.com/NimmLor/IoT-Audio-Visualization-Center
 
 Can be downloaded [here](https://github.com/NimmLor/IoT-Audio-Visualization-Center/releases).
 
-![screenshot_alpha?raw=true](C:\Repos\esp8266-fastled-iot-webserver\screenshot_alpha.jpg)
+![screenshot_alpha](screenshot_alpha.jpg?raw=true)
 
 https://github.com/NimmLor/IoT-Audio-Visualization-Center
 
