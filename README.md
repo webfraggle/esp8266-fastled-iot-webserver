@@ -57,7 +57,7 @@ All of my recent project were merged into one including most of the features. A 
 	
 * Project link, large version:			https://www.thingiverse.com/thing:2968056
 
-**3D-Printed Desk Lamp**, a Lamp that reacts to sound for your desk
+**3D-Printed Desk Lamp**, a lamp that reacts to sound for your desk
 
 * Project link, twisted version:		https://www.thingiverse.com/thing:4129249
 * Project link, round version:			https://www.thingiverse.com/thing:3676533
@@ -66,7 +66,7 @@ All of my recent project were merged into one including most of the features. A 
 
 * Project link:													https://www.thingiverse.com/thing:3354082
 	
-* 5: 3D-Printed Animated RGB Logos
+**3D-Printed Animated RGB Logos**, a small 3D-Printed logo that lights up with style
 	
 * Project link, Twenty-One-Pilots Logo:		https://www.thingiverse.com/thing:3523487
 	
