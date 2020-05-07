@@ -284,6 +284,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 ###########################################################################################################*/
 
 #ifdef DEVICE_TYPE
+#include <WiFiUdp.h>
 
 #if DEVICE_TYPE == 1
 	#define PACKET_LENGTH LENGTH
