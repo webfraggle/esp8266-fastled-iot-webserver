@@ -1,4 +1,4 @@
-﻿/*
+/*
    ESP8266 FastLED WebServer: https://github.com/jasoncoon/esp8266-fastled-webserver
    Copyright (C) 2015-2018 Jason Coon
 
@@ -610,12 +610,14 @@ void handleReboot()
 	ESP.restart();
 }
 
+#ifdef ENABLE_ALEXA_SUPPORT
 void handleReboot2()
 {
 	webServer2.send(200, "text/html", getRebootString());
 	delay(500);
 	ESP.restart();
 }
+#endif // ENABLE_ALEXA_SUPPORT
 
 void addRebootPage(int webServerNr = 0)
 {
@@ -623,11 +625,14 @@ void addRebootPage(int webServerNr = 0)
 	{
 		webServer.on("/reboot", handleReboot);
 	}
+	#ifdef ENABLE_ALEXA_SUPPORT
 	else if (webServerNr == 2)
 	{
 		webServer2.on("/reboot", handleReboot2);
 	}
+	#endif // ENABLE_ALEXA_SUPPORT
 }
+
 
 void setup() {
 	WiFi.setSleepMode(WIFI_NONE_SLEEP);
