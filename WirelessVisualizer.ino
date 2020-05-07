@@ -617,6 +617,7 @@ void handleReboot2()
 	delay(500);
 	ESP.restart();
 }
+#endif // ENABLE_ALEXA_SUPPORT
 
 void addRebootPage(int webServerNr = 0)
 {
@@ -624,12 +625,14 @@ void addRebootPage(int webServerNr = 0)
 	{
 		webServer.on("/reboot", handleReboot);
 	}
+	#ifdef ENABLE_ALEXA_SUPPORT
 	else if (webServerNr == 2)
 	{
 		webServer2.on("/reboot", handleReboot2);
 	}
+	#endif // ENABLE_ALEXA_SUPPORT
 }
-#endif // ENABLE_ALEXA_SUPPORT
+
 
 void setup() {
 	WiFi.setSleepMode(WIFI_NONE_SLEEP);
