@@ -85,6 +85,8 @@ All of my recent project were merged into one including most of the features. A 
   - MQTT/Homeassistant integration by @WarDrake
   - Serial Ambilight for usage behind a TV
   - Support of Desk Lamp, 7-Segment Clock, Animated RGB Logos, Generic LED-Strip
+  - WebUI fits now on 1MB devices (esp-01)
+  - Dark mode for WebUI
 
 ### 01.02.2020, Native Alexa Update
 
