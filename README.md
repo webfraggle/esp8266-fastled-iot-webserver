@@ -1,6 +1,6 @@
 # ESP8266 FastLED IoT Webserver
 
-<a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/graphs/contributors" alt="Contributors"><img src="https://img.shields.io/github/contributors/NimmLor/esp8266-nanoleaf-webserver" /></a> <a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/Releases" alt="Downloads"><img src="https://img.shields.io/github/downloads/NimmLor/esp8266-fastled-iot-webserver/total"/></a><a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/commits/master" alt="Downloads">
+<a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/graphs/contributors" alt="Contributors"><img src="https://img.shields.io/github/contributors/NimmLor/esp8266-fastled-iot-webserver" /></a> <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/releases" alt="Downloads"><img src="https://img.shields.io/github/downloads/NimmLor/esp8266-fastled-iot-webserver/total"/></a><a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/commits/master" alt="Downloads">
 <img src="https://img.shields.io/github/commits-since/NimmLor/esp8266-fastled-iot-webserver/latest?include_prereleases" /></a>
 	
 	
