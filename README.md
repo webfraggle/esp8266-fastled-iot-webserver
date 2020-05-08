@@ -1,7 +1,9 @@
 # ESP8266 FastLED IoT Webserver
 
-<a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/graphs/contributors" alt="Contributors">
-        <img src="https://img.shields.io/github/contributors/NimmLor/esp8266-nanoleaf-webserver" /></a>
+<a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/graphs/contributors" alt="Contributors"><img src="https://img.shields.io/github/contributors/NimmLor/esp8266-nanoleaf-webserver" /></a> <a href="https://github.com/NimmLor/esp8266-nanoleaf-webserver/Releases" alt="Downloads"><img src="https://img.shields.io/github/downloads/NimmLor/esp8266-fastled-iot-webserver/total"/></a><a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/commits/master" alt="Downloads">
+<img src="https://img.shields.io/github/commits-since/NimmLor/esp8266-fastled-iot-webserver/latest?include_prereleases" /></a>
+	
+	
 
 This is a fork of [jasoncoon's esp8266 fastled webserver](https://github.com/jasoncoon/esp8266-fastled-webserver) that was adapted to control the colors of my  [LED-Projects](https://www.thingiverse.com/Surrbradl08/designs).
 
