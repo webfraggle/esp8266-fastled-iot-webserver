@@ -76,7 +76,7 @@ The video wasn't updated for the new update, so the library versions are incorre
 
    ![](software_screenshots/mqtt.png?raw=true)
  
-   ![](software_screenshots/arduinojson.png?raw=true)
+   ![](software_screenshots/arduinoJson.png?raw=true)
 
 
 
