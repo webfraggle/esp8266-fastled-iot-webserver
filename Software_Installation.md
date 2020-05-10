@@ -20,7 +20,8 @@ For beginners I would recommend watching this setup tutorial below.
 
 The video wasn't updated for the new update, so the library versions are incorrect and the config area looks different.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/d-uNkFHoMHc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![](http://img.youtube.com/vi/d-uNkFHoMHc/0.jpg)](http://www.youtube.com/watch?v=d-uNkFHoMHc "Setup Tutorial")
+
 ## 1. Development environment
 
 1. The code requires a recent version of the **Arduino IDE**, which can be downloaded [here]( https://www.arduino.cc/en/Main/Software ).
