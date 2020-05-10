@@ -108,7 +108,6 @@ extern "C" {
 	#define LENGTH 32
 	#define HEIGHT 8
 	//#define AddLogoVisualizers		// (only 32x8) Adds Visualization patterns with logo (currently only HBz)
-)
 #elif DEVICE_TYPE == 2			// 7-Segment Clock
 	#define NTP_REFRESH_INTERVAL_SECONDS 600	// 10 minutes
 	const char* ntpServerName = "at.pool.ntp.org";	// Austrian ntp-timeserver
@@ -153,7 +152,7 @@ extern "C" {
 
 	//#define ENABLE_ALEXA_SUPPORT			// Espalexa library required
 
-	//#define SOUND_SENSOR_SUPPORT			// Allows to control the leds using a physical sound-sensor, configuration below
+	//#define SOUND_SENSOR_SUPPORT			// allows to control the leds using a physical sound-sensor, configuration below
 
 	//#define ENABLE_SERIAL_AMBILIGHT		// allows to function as an ambilight behind a monitor by using data from usb-serial (integration of adalight)
 
