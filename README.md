@@ -110,12 +110,12 @@ All of my recent project were merged into one including most of the features. A 
 
 ### Bill of Materials
 
-- 1x [Wemos D1 mini](http://s.click.aliexpress.com/e/_srb2XX) is recommended, but any other ESP8266 variant should work too, but it might require an additional step-down converter.
-- [WS2812B LED Strip **IP30**](http://s.click.aliexpress.com/e/_sUwhA1), only IP30 will fit inside the nanoleafs, I'll recommend at least 60LEDs/m
-- 1x [Microphone Sensor](http://s.click.aliexpress.com/e/_sYiUrz) (Optional), MAX4466 Sensor is recommended
+- 1x [Wemos D1 mini](https://s.click.aliexpress.com/e/_dTVGMGl) is recommended, but any other ESP8266 variant should work too, but it might require an additional step-down converter.
+- [WS2812B LED Strip **IP30**](https://s.click.aliexpress.com/e/_dZ1hCJ7), only IP30 will fit inside the nanoleafs, I'll recommend at least 60LEDs/m
 - 1x [3.3V to 5V Logic Level Shifter](http://s.click.aliexpress.com/e/_s49Saz) (optional, required if LEDs "glitch")
 - 1x [Female Power Jack](http://s.click.aliexpress.com/e/_sPe0RR)
-- 1x [5V Power Supply](http://s.click.aliexpress.com/e/_sIzXbC), Note: 100 LEDs draw around 4A
+- 1x [5V Power Supply](https://s.click.aliexpress.com/e/_dY5zCWt), Note: 100 LEDs draw around 4A
+- (Optional) [Solderless LED-Connectors](https://s.click.aliexpress.com/e/_dV4rsjF)
 
 
 
@@ -178,7 +178,7 @@ The only drawback to SPIFFS that I've found so far is uploading the files can be
 
 ### Alexa
 
-The code has an optional feature to be able to control the lamp via Alexa on any Amazon Echo device. For setup instructions refer to [Software_Installation.md](https://github.com/NimmLor/esp8266-fastled-desk-light/blob/master/Software_Installation.md) document.
+The code has an optional feature to be able to control the lamp via Alexa on any Amazon Echo device. For setup instructions refer to [Software_Installation.md](Software_Installation.md) document.
 
 
 
