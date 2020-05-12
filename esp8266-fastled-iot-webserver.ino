@@ -284,8 +284,8 @@ if you have connected the ring first it should look like this: const int twpOffs
 		#define MQTT_DEVICE_NAME "Animated Logo"
 	#endif
 	#define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()				// A Unique Identifier for the device in Homeassistant (MAC Address used by default)
-	#define MQTT_MAX_PACKET_SIZE 1024
-	#define MQTT_MAX_TRANSFER_SIZE 1024
+	#define MQTT_MAX_PACKET_SIZE 512
+	#define MQTT_MAX_TRANSFER_SIZE 512
 	// For the user / password check the Secrets.h file and modify your settings in there.
 	// const char* mqttUser = "YourMqttUser";
 	// const char* mqttPassword = "YourMqttUserPassword";
@@ -1159,7 +1159,6 @@ void loop() {
 		}
 		if (!mqttConnected) {
 			mqttConnected = true;
-
 			Serial.println("Connecting to MQTT...");
 			if (mqttClient.connect(HOSTNAME, mqttUser, mqttPassword)) {
 				Serial.println("connected \n");
@@ -1167,15 +1166,15 @@ void loop() {
 				Serial.println("Subscribing to MQTT Topics \n");
 				mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
-				StaticJsonDocument<1024> JSONencoder;
+				DynamicJsonDocument JSONencoder(2048);
 				JSONencoder["~"] = MQTT_TOPIC,
 					JSONencoder["name"] = MQTT_DEVICE_NAME,
-					JSONencoder["device"]["identifiers"] = MQTT_UNIQUE_IDENTIFIER,
-					JSONencoder["device"]["manufacturer"] = "Surrbradl08",
-					JSONencoder["device"]["model"] = "0.4",
-					JSONencoder["device"]["name"] = MQTT_DEVICE_NAME,
-					JSONencoder["state_topic"] = "~",
-					JSONencoder["command_topic"] = "~" MQTT_TOPIC_SET,
+					JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
+					JSONencoder["dev"]["mf"] = "Surrbradl08",
+					JSONencoder["dev"]["mdl"] = "0.4",
+					JSONencoder["dev"]["name"] = MQTT_DEVICE_NAME,
+					JSONencoder["stat_t"] = "~",
+					JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,
 					JSONencoder["brightness"] = true,
 					JSONencoder["rgb"] = true,
 					JSONencoder["effect"] = true,
@@ -1186,14 +1185,11 @@ void loop() {
 				for (uint8_t i = 0; i < patternCount; i++) {
 					effect_list.add(patterns[i].name);
 				}
-
-				char JSONmessage[1024];
-				size_t n = serializeJson(JSONencoder, JSONmessage);
-
+				size_t n = measureJson(JSONencoder);
 				if (mqttClient.beginPublish(MQTT_TOPIC "/config", n, true) == true) {
 					Serial.println("Configuration Publishing Begun");
-					if (mqttClient.print(JSONmessage) == true) {
-						Serial.println("Configuration Sent");
+					if (serializeJson(JSONencoder, mqttClient) == n){
+					 	Serial.println("Configuration Sent");
 					}
 					if (mqttClient.endPublish() == true) {
 						Serial.println("Configuration Publishing Finished");
