@@ -120,15 +120,15 @@ extern "C" {
 	#define Digit4 23
 	// Values for the Big Clock: 58, 0, 14, 30, 44
 
-#elif DEVICE_TYPE == 3
+#elif DEVICE_TYPE == 3			// Desk Lamp
 	#define LINE_COUNT    8           // Amount of led strip pieces
 	#define LEDS_PER_LINE 10          // Amount of led pixel per single led strip piece
 
-#elif DEVICE_TYPE == 4
+#elif DEVICE_TYPE == 4			// Nanoleafs
 	#define LEAFCOUNT 12              // Amount of triangles
 	#define PIXELS_PER_LEAF 12        // Amount of LEDs inside 1x Tringle
 
-#elif DEVICE_TYPE == 5
+#elif DEVICE_TYPE == 5			// Animated Logos
 	// Choose your logo below, remove the comment in front of your design
 	// Important: see "LOGO CONFIG" below
 
@@ -258,11 +258,35 @@ if you have connected the ring first it should look like this: const int twpOffs
 #ifdef ENABLE_MQTT_SUPPORT
 	const char* mqttServer = "homeassistant.local";
 	const int mqttPort = 1883;
-	#define MQTT_TOPIC "homeassistant/light/nanoleafs"          // MQTT Topic to Publish to (Home Assistant)
-	#define MQTT_TOPIC_SET "homeassistant/light/nanoleafs/set"  // MQTT Topic to subscribe to (Home Assistant)
-	#define MQTT_MAX_PACKET_SIZE 1024
-	#define MQTT_MAX_TRANSFER_SIZE 1024
-	// For the user / password check the Secrets.h file and append at the end of it.
+	#if DEVICE_TYPE == 0
+		#define MQTT_TOPIC "homeassistant/light/ledstrip"			// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"  								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "Ledstrip"
+	#elif DEVICE_TYPE == 1
+		#define MQTT_TOPIC "homeassistant/light/ledmatrix"			// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"  								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "Led Matrix"
+	#elif DEVICE_TYPE == 2
+		#define MQTT_TOPIC "homeassistant/light/7-segment-clock"	// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"  								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "7 Segment Clock"
+	#elif DEVICE_TYPE == 3
+		#define MQTT_TOPIC "homeassistant/light/desklamp"			// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"  								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "Led Desk Lamp"
+	#elif DEVICE_TYPE == 4
+		#define MQTT_TOPIC "homeassistant/light/nanoleafs"			// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "Nanoleafs"
+	#elif DEVICE_TYPE == 5
+		#define MQTT_TOPIC "homeassistant/light/ledlogo"			// MQTT Topic to Publish to for state and config (Home Assistant)
+		#define MQTT_TOPIC_SET "/set"								// MQTT Topic to subscribe to for changes(Home Assistant)
+		#define MQTT_DEVICE_NAME "Animated Logo"
+	#endif
+	#define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()				// A Unique Identifier for the device in Homeassistant (MAC Address used by default)
+	#define MQTT_MAX_PACKET_SIZE 512
+	#define MQTT_MAX_TRANSFER_SIZE 512
+	// For the user / password check the Secrets.h file and modify your settings in there.
 	// const char* mqttUser = "YourMqttUser";
 	// const char* mqttPassword = "YourMqttUserPassword";
 
@@ -355,6 +379,10 @@ ESP8266HTTPUpdateServer httpUpdateServer;
 // Wi-Fi network to connect to (if not in AP mode)
 // char* ssid = "your-ssid";
 // char* password = "your-password";
+
+// MQTT user and password for your broker (if MQTT is enabled)
+// const char* mqttUser = "your-mqtt-user";
+// const char* mqttPassword = "your-mqtt-password";
 
 #ifdef ENABLE_OTA_SUPPORT
 #include <ArduinoOTA.h>
@@ -1054,12 +1082,18 @@ void broadcastInt(String name, uint8_t value)
 {
 	String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
 	//  webSocketsServer.broadcastTXT(json);
+	#ifdef ENABLE_MQTT_SUPPORT
+		sendStatus();
+	#endif
 }
 
 void broadcastString(String name, String value)
 {
 	String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
 	//  webSocketsServer.broadcastTXT(json);
+	#ifdef ENABLE_MQTT_SUPPORT
+		sendStatus();
+	#endif
 }
 
 void loop() {
@@ -1125,41 +1159,37 @@ void loop() {
 		}
 		if (!mqttConnected) {
 			mqttConnected = true;
-
 			Serial.println("Connecting to MQTT...");
 			if (mqttClient.connect(HOSTNAME, mqttUser, mqttPassword)) {
 				Serial.println("connected \n");
 
 				Serial.println("Subscribing to MQTT Topics \n");
-				mqttClient.subscribe(MQTT_TOPIC "/set");
+				mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
-				StaticJsonDocument<1024> JSONencoder;
+				DynamicJsonDocument JSONencoder(2048);
 				JSONencoder["~"] = MQTT_TOPIC,
-					JSONencoder["name"] = "Nanoleafs",
-					JSONencoder["device"]["identifiers"] = "livingroom_nanoleafs",
-					JSONencoder["device"]["manufacturer"] = "WD DIY",
-					JSONencoder["device"]["model"] = "0.1",
-					JSONencoder["device"]["name"] = "DIY Nanoleafs",
-					JSONencoder["state_topic"] = "~",
-					JSONencoder["command_topic"] = "~/set",
+					JSONencoder["name"] = MQTT_DEVICE_NAME,
+					JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
+					JSONencoder["dev"]["mf"] = "Surrbradl08",
+					JSONencoder["dev"]["mdl"] = "0.4",
+					JSONencoder["dev"]["name"] = MQTT_DEVICE_NAME,
+					JSONencoder["stat_t"] = "~",
+					JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,
 					JSONencoder["brightness"] = true,
 					JSONencoder["rgb"] = true,
 					JSONencoder["effect"] = true,
-					JSONencoder["uniq_id"] = "livingroom_nanoleafs",
+					JSONencoder["uniq_id"] = MQTT_UNIQUE_IDENTIFIER,
 					JSONencoder["schema"] = "json";
 
 				JsonArray effect_list = JSONencoder.createNestedArray("effect_list");
 				for (uint8_t i = 0; i < patternCount; i++) {
 					effect_list.add(patterns[i].name);
 				}
-
-				char JSONmessage[1024];
-				size_t n = serializeJson(JSONencoder, JSONmessage);
-
+				size_t n = measureJson(JSONencoder);
 				if (mqttClient.beginPublish(MQTT_TOPIC "/config", n, true) == true) {
 					Serial.println("Configuration Publishing Begun");
-					if (mqttClient.print(JSONmessage) == true) {
-						Serial.println("Configuration Sent");
+					if (serializeJson(JSONencoder, mqttClient) == n){
+					 	Serial.println("Configuration Sent");
 					}
 					if (mqttClient.endPublish() == true) {
 						Serial.println("Configuration Publishing Finished");
@@ -3692,9 +3722,6 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 	for (JsonPair p : obj) {
 		const char* key = p.key().c_str();
 		JsonVariant v = p.value();
-		String value = v.as<String>();  //Delete
-		Serial.println(key);            //Delete
-		Serial.println(value);          //Delete
 
 		if (strcmp(key, "state") == 0) {
 			String val = v.as<String>();
@@ -3703,6 +3730,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 		if (strcmp(key, "brightness") == 0) {
 			int val = v.as<int>();
 			setBrightness(val);
+		}
+		if (strcmp(key, "autoplay") == 0){
+			String val = v.as<String>();
+			setAutoplay((val == "ON") ? 1 : 0);
+		}
+		if (strcmp(key, "speed") == 0){
+			int val = v.as<int>();
+			speed = val;
 		}
 		if (strcmp(key, "effect") == 0) {
 			String val = v.as<String>();
@@ -3734,9 +3769,10 @@ void sendStatus()
 {
 	StaticJsonDocument<128> JSONencoder;
 	JSONencoder["state"] = (power == 1 ? "ON" : "OFF"),
-		JSONencoder["brightness"] = brightness,
-		JSONencoder["effect"] = patterns[currentPatternIndex].name,
-		JSONencoder["QoS"] = 2;
+  	JSONencoder["brightness"] = brightness,
+  	JSONencoder["effect"] = patterns[currentPatternIndex].name,
+  	JSONencoder["autoplay"] = autoplay,
+  	JSONencoder["speed"] = speed;
 
 	uint8_t JSONmessage[128];
 	size_t n = serializeJson(JSONencoder, JSONmessage);
