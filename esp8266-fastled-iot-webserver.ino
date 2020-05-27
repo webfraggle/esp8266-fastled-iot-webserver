@@ -1140,7 +1140,7 @@ void loop() {
 			}
 			else {
 				Serial.println("\nmDNS responder started \n");
-				MDNS.addService("\nhttp", "tcp", 80);
+				MDNS.addService("http", "tcp", 80);
 			}
 #endif
 		}
