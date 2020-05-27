@@ -3714,9 +3714,11 @@ void soundReactive()
 
 //############################## MQTT HELPER FUNCTIONS ##############################
 #ifdef ENABLE_MQTT_SUPPORT
+static bool mqttProcessing = false;
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-	StaticJsonDocument<256> doc;
-	deserializeJson(doc, payload, length);
+	mqttProcessing = true;
+	DynamicJsonDocument doc(1024);
+	deserializeJson(doc, payload);
 
 	JsonObject obj = doc.as<JsonObject>();
 	for (JsonPair p : obj) {
@@ -3762,6 +3764,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 			setSolidColor(cr, cg, cb);
 		}
 	}
+	mqttProcessing = false;
 	sendStatus();
 }
 
@@ -3776,7 +3779,9 @@ void sendStatus()
 
 	uint8_t JSONmessage[128];
 	size_t n = serializeJson(JSONencoder, JSONmessage);
-	mqttClient.publish(MQTT_TOPIC, JSONmessage, n, true);
+	if (!mqttProcessing){
+		mqttClient.publish(MQTT_TOPIC, JSONmessage, n, true);
+	}
 }
 #endif // ENABLE_MQTT_SUPPORT
 //############################## MQTT HELPER FUNCTIONS END ##############################
