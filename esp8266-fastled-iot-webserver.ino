@@ -15,7 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define FASTLED_INTERRUPT_RETRY_COUNT 0
+#define FASTLED_INTERRUPT_RETRY_COUNT 1
 #define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 FASTLED_USING_NAMESPACE
@@ -65,9 +65,9 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION		// remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "LEDs"				// Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "Bottle"				// Name that appears in your network, don't use whitespaces, use "-" instead
 
-#define DEVICE_TYPE 4				// The following types are available
+#define DEVICE_TYPE 0				// The following types are available
 /*
 	0: Generic LED-Strip: Just a regular LED-Strip without special hardware
 		* Easiest: 5V WS2812B LED-Strip:		https://s.click.aliexpress.com/e/_dZ1hCJ7
@@ -101,7 +101,8 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if DEVICE_TYPE == 0			// Generic LED-Strip
-	#define NUM_LEDS 33
+	#define NUM_LEDS 24
+	//#define NUM_LEDS 33
 	//#define NUM_LEDS 183
 	#define BAND_GROUPING	1			// Groups part of the band to save performance and network traffic
 #elif DEVICE_TYPE == 1			// LED MATRIX
@@ -142,15 +143,15 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 	//#define ACCESS_POINT_MODE				// the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
-	//#define ENABLE_OTA_SUPPORT				// requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
-		//#define OTA_PASSWORD "pass123"	//  password that is required to update the esp's firmware wireless
+	#define ENABLE_OTA_SUPPORT				// requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+		//#define OTA_PASSWORD "passwd123"	//  password that is required to update the esp's firmware wireless
 
 	#define ENABLE_MULTICAST_DNS			// allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
 
 	#define RANDOM_AUTOPLAY_PATTERN			// if enabled the next pattern for autoplay is choosen at random
 	#define AUTOPLAY_IGNORE_UDP_PATTERNS	// remove visualization patterns from autoplay
 
-	//#define ENABLE_ALEXA_SUPPORT			// Espalexa library required
+	#define ENABLE_ALEXA_SUPPORT			// Espalexa library required
 
 	//#define SOUND_SENSOR_SUPPORT			// allows to control the leds using a physical sound-sensor, configuration below
 
@@ -2456,7 +2457,7 @@ CHSV getVisualizerBulletValue(double cd)
 {
 	CHSV toSend;
 	if (cd < 1.05)toSend = CHSV(0, 0, 0);
-	if (cd < 1.10)toSend = CHSV(gHue, 255, 30);
+	if (cd < 1.10)toSend = CHSV(gHue, 255, 5);
 	else if (cd < 1.15)toSend = CHSV(gHue, 255, 150);
 	else if (cd < 1.20)toSend = CHSV(gHue + 20, 255, 200);
 	else if (cd < 1.25)toSend = CHSV(gHue + 40, 255, 255);
