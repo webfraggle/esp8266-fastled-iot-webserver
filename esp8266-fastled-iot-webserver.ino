@@ -500,6 +500,18 @@ PatternAndNameList patterns = {
 	{ rainbow_strobe,         "Rainbow Strobe"},
 	{ smooth_rainbow_strobe,  "Smooth Rainbow Strobe"},
 
+	// DigitalJohnson patterns
+	{ rainbowRoll,              "Rainbow Roll" },
+	{ rainbowBeat,              "Rainbow Beat" },
+	{ randomPaletteFades,              "Palette Fades" },
+	{ rainbowChase,              "Rainbow Chase" },
+	{ randomDots,              "Rainbow Dots" },
+	{ randomFades,              "Rainbow Fades" },
+	{ policeLights,              "Police Lights" },
+	{ glitter,              "Glitter" },
+	{ snowFlakes,              "Snow Flakes" },
+	{ lightning,				"Lightning"},
+
 	// twinkle patterns
 	{ rainbowTwinkles,        "Rainbow Twinkles" },
 	{ snowTwinkles,           "Snow Twinkles" },
@@ -1361,7 +1373,7 @@ void setPattern(uint8_t value)
 
 	currentPatternIndex = value;
 
-	if (autoplay == 0) {
+	if (autoplay != 1) {
 		EEPROM.write(1, currentPatternIndex);
 		EEPROM.commit();
 	}
@@ -1846,6 +1858,212 @@ void palettetest(CRGB* ledarray, uint16_t numleds, const CRGBPalette16& gCurrent
 	startindex--;
 	fill_palette(ledarray, numleds, startindex, (256 / NUM_LEDS) + 1, gCurrentPalette, 255, LINEARBLEND);
 }
+
+
+
+//########################### Patterns by Resseguie/FastLED-Patterns ###########################
+
+TBlendType    blendType;
+TBlendType currentBlending; // Current blending type
+static bool firstRun = true; // First run flag used by some patterns
+
+struct timer_struct
+{
+	unsigned long period;
+	unsigned long mark;
+	bool enabled = false;
+};
+
+// Brightness level per pattern
+const uint8_t brightVal[ARRAY_SIZE(patterns)] =
+{
+	192, 192, 225, 225, 225, 225, 225, 255, 255, 192, 225
+};
+
+// Delay for incrementing gHue variable per pattern
+const uint8_t hueStep[ARRAY_SIZE(patterns)] =
+{
+	10, 15, 8, 1, 10, 1, 1, 1, 1, 1, 1
+};
+
+// Delay inserted into loop() per pattern
+unsigned long patternDelay[ARRAY_SIZE(patterns)] =
+{
+	0, 0, 0, 55, 55, 5, 10, 15, 15, 15, 0
+};
+
+///////////////////////////
+//   Pattern functions   //
+///////////////////////////
+
+
+void rainbowRoll()
+{
+	// FastLED's built-in rainbow generator
+	fill_rainbow(leds, NUM_LEDS, gHue, 7);
+}
+
+void rainbowBeat()
+{
+	// colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+	uint8_t beat = beatsin8(speed, 64, 255); // Beat advances and retreats in a sine wave
+	for (int i = 0; i < NUM_LEDS; i++)
+	{
+		leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
+	}
+}
+
+// LEDs turn on one at a time at full brightness and slowly fade to black
+// Uses colors from a palette of colors
+void randomPaletteFades()
+{
+	uint16_t i = random16(0, (NUM_LEDS - 1)); // Pick a random LED
+	{
+		uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
+		if (CRGB(0, 0, 0) == CRGB(leds[i])) // Only set new color to LED that is off
+		{
+			leds[i] = ColorFromPalette(palettes[currentPaletteIndex], colorIndex, 255, currentBlending);
+			blur1d(leds, NUM_LEDS, 32); // Blur colors with neighboring LEDs
+		}
+	}
+	fadeToBlackBy(leds, NUM_LEDS, 8); // Slowly fade LEDs to black
+}
+
+// Theater style chasing lights rotating in one direction while the
+// rainbow colors rotate in the opposite direction.
+void rainbowChase()
+{
+	static int q = 0;
+	fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
+	for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
+	{
+		leds[((i + q) + 1)] = CRGB(0, 0, 0);
+		leds[((i + q) + 2)] = CRGB(0, 0, 0);
+	}
+	if (2 > q)
+	{
+		q++;
+	}
+	else
+	{
+		q = 0;
+	}
+}
+
+void randomDots() // Similar to randomFades(), colors flash on/off quickly
+{
+	uint16_t pos;
+	do
+	{
+		pos = random16(0, (NUM_LEDS - 1));
+	} while (CRGB(0, 0, 0) != CRGB(leds[pos]));
+	fadeToBlackBy(leds, NUM_LEDS, 64);
+	leds[pos] = CHSV((random8() % 256), 200, 255);
+}
+
+// Same as randomPaletteFades() but with completely random colors
+void randomFades()
+{
+	uint16_t pos;
+	pos = random16(0, (NUM_LEDS - 1));
+	if (CRGB(0, 0, 0) == CRGB(leds[pos]))
+	{
+		leds[pos] = CHSV((random8() % 256), 200, 255);
+	}
+	fadeToBlackBy(leds, NUM_LEDS, 8);
+}
+
+// Same as randomDots() but with red and blue flashes only
+void policeLights()
+{
+	fadeToBlackBy(leds, NUM_LEDS, 128);
+	uint16_t p = random16(0, (NUM_LEDS - 1));
+	uint8_t n = (1 & random8());
+	if (n)
+	{
+		leds[p] = CRGB(255, 0, 0);
+	}
+	else
+	{
+		leds[p] = CRGB(0, 0, 255);
+	}
+}
+
+// Same as randomDots() but faster white flashes only
+void glitter()
+{
+	fadeToBlackBy(leds, NUM_LEDS, 128);
+	if (random8() < 225)
+	{
+		leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
+	}
+}
+
+// Twinkling random dim white LEDs mixed with glitter() above
+void snowFlakes()
+{
+	uint8_t shader;
+	for (int x = 0; NUM_LEDS > x; x++)
+	{
+		shader = random8(20, 30);
+		leds[x] = CRGB(shader, shader, shader);
+	}
+	leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
+	delay(40);
+}
+
+// Simulates lightning with randomly timed and random size bolts
+void lightning()
+{
+	static timer_struct boltTimer;
+	if (firstRun)
+	{
+		firstRun = false;
+		boltTimer.period = 0;
+		boltTimer.mark = millis();
+	}
+	if (boltTimer.period < (millis() - boltTimer.mark))
+	{
+		uint16_t boltLength = random16(5, 30);
+		uint8_t numStrobes = random8(1, 3);
+		uint32_t highPulseTime[numStrobes];
+		uint32_t lowPulseTime[numStrobes];
+		for (uint8_t i = 0; numStrobes > i; i++)
+		{
+			highPulseTime[i] = (uint32_t)(random16(60, 250));
+			lowPulseTime[i] = (uint32_t)(random16(50, 300));
+		}
+		uint16_t pos = random16(0, ((NUM_LEDS - 1) - boltLength));
+		for (uint8_t i = 0; numStrobes > i; i++)
+		{
+			for (uint16_t x = pos; (pos + boltLength) > x; x++)
+			{
+				leds[x] = CRGB(255, 255, 255);
+				LEDS.show();
+				delay(3);
+			}
+			delay(highPulseTime[i]);
+			if (numStrobes > 1)
+			{
+				for (uint16_t x = pos; (pos + boltLength) > x; x++)
+				{
+					leds[x] = CRGB(127, 127, 127);
+					LEDS.show();
+					delay(3);
+				}
+				delay(lowPulseTime[i]);
+			}
+		}
+		for (uint16_t x = pos; (pos + boltLength) > x; x++)
+		{
+			leds[x] = CRGB(0, 0, 0);
+		}
+		boltTimer.period = (unsigned long)(random16(1500, 5000));
+		boltTimer.mark = millis();
+	}
+}
+
+//######################### Patterns by Resseguie/FastLED-Patterns END #########################
 
 
 //##################### Desk Lamp
