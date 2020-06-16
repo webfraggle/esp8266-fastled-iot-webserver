@@ -557,6 +557,9 @@ PatternAndNameList patterns = {
 	{ vuMeterTriColor,					"Tri-Color Volume Visualizer"},
 	{ RefreshingVisualizer,				"Wave Visualizer"},
 	{ CentralVisualizer,				"Center Visualizer"},
+	{ SolidColorDualTone,				"Solid-Color Pair Bullet Visualizer"},
+	{ SolidColorComplementary,			"Solid-Color Complementary Bullet Visualizer"},
+	{ BluePurpleBullets,				"Blue/Purple Bullet Visualizer"},
 	{ BulletVisualizer,					"Beat-Bullet Visualization"},
 	//{ TrailingBulletsVisualizer,		"Trailing Bullet Visualization"},		// obsolete
 	//{ BrightnessVisualizer,				"Brightness Visualizer"},			// broken
@@ -1861,7 +1864,7 @@ void palettetest(CRGB* ledarray, uint16_t numleds, const CRGBPalette16& gCurrent
 
 
 
-//########################### Patterns by Resseguie/FastLED-Patterns ###########################
+//########################### Patterns by DigitalJohnson ###########################
 
 TBlendType    blendType;
 TBlendType currentBlending; // Current blending type
@@ -2697,6 +2700,19 @@ CHSV getVisualizerBulletValue(double cd)
 	return toSend;
 }
 
+CHSV getVisualizerBulletValue(int hue, double cd)
+{
+	CHSV toSend;
+	if (cd < 1.05)toSend = CHSV(0, 0, 0);
+	if (cd < 1.10)toSend = CHSV(hue, 255, 5);
+	else if (cd < 1.15)toSend = CHSV(hue, 255, 150);
+	else if (cd < 1.20)toSend = CHSV(hue, 255, 200);
+	else if (cd < 1.25)toSend = CHSV(hue, 255, 255);
+	else if (cd < 1.30)toSend = CHSV(hue, 255, 255);
+	else if (cd < 1.45)toSend = CHSV(hue, 255, 255);
+	else toSend = CHSV(hue, 255, 255);
+	return toSend;
+}
 
 
 
@@ -2885,6 +2901,84 @@ void RefreshingVisualizer()
 	lastVals[i_pos] = currentVolume;
 }
 
+void DualToneBullets(int hueA, int hueB, int grpsz)
+{
+	static uint8_t lastVals[AVG_ARRAY_SIZE] = { 1,1,1,1,1,1,1,1,1,1 };
+	static int i_pos = 0;
+	int currentVolume = 0;
+	int avgVolume = 0;
+	double cd = 0;
+	static int hSwitch = 0;
+	static bool h = false;
+
+	CHSV toSend;
+
+	if (!parseUdp())
+	{
+		ShiftLeds(1);
+		return;
+	}
+	currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
+	avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+	if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
+	if (currentVolume < 25)cd = 0;
+	if (currentVolume > 230) cd += 0.15;
+
+	toSend = getVisualizerBulletValue(h ? hueA : hueB, cd);
+
+	int update_rate = map(speed, 0, 70, 100, 0);
+	if (update_rate >= 0)
+	{
+		ShiftLeds(1);
+		SendLeds(toSend, 1);
+		delay(update_rate);
+	}
+	else
+	{
+		int steps = map(update_rate, -264, 0, 8, 0);
+		ShiftLeds(steps);
+		SendLeds(toSend, steps);
+	}
+
+	i_pos++;
+	hSwitch++;
+	if (hSwitch >= grpsz) {
+		hSwitch = 0;
+		h = !h;
+	}
+	if (i_pos >= AVG_ARRAY_SIZE)i_pos = 0;
+	lastVals[i_pos] = currentVolume;
+}
+
+int getCounterHue(int h) {
+	if (h <= 127) return h + 127;
+	if (h > 127) return h - 127;
+}
+
+int getPairHue(int h) {
+	if (h <= 84) return h + 84;
+	if (h > 84) return h - 84;
+}
+
+#define BULLET_COLOR_SIZE ((int)(NUM_LEDS/7.9))
+
+void SolidColorComplementary() {
+	int h1 = rgb2hsv_approximate(solidColor).hue;
+	int h2 = getCounterHue(h1);
+	DualToneBullets(h1, h2, BULLET_COLOR_SIZE);
+}
+
+void SolidColorDualTone() {
+	int h1 = rgb2hsv_approximate(solidColor).hue;
+	int h2 = getPairHue(h1);
+	DualToneBullets(h1, h2, BULLET_COLOR_SIZE);
+}
+
+void BluePurpleBullets() {
+
+	DualToneBullets(240, 170, BULLET_COLOR_SIZE);
+}
+
 int expo(double x, double start = 0)
 {
 	double res = 10.0 * (pow(1.02, x)) - 10.0 + start;
@@ -2909,7 +3003,7 @@ void Band(int grpSize, CRGB x, int mergePacket = 1)
 		for (int t = i; t < (i + mergePacket); t++)avg += incomingPacket[t];
 		avg /= (double)mergePacket;
 		//uint8_t mult = expo(getVolume(incomingPacket, i, i+(mergePacket-1)), 6.0);
-		uint8_t mult = expo(avg, 6.0);
+		uint8_t mult = expo(avg, 0.0);
 
 		if (x.r == 0 && x.g == 0 && x.b == 0)
 		{
