@@ -54,7 +54,7 @@ extern "C" {
 */ 
 
 /*######################## MAIN CONFIG ########################*/
-#define LED_TYPE		WS2812				// You might also use a WS2811 or any other strip that is Fastled compatible 
+#define LED_TYPE		WS2812B				// You might also use a WS2811 or any other strip that is Fastled compatible 
 #define DATA_PIN		D3					// Be aware: the pin mapping might be different on boards like the NodeMCU
 //#define CLK_PIN		D5				// Only required when using 4-pin SPI-based LEDs
 #define CORRECTION		UncorrectedColor    // If colors are weird use TypicalLEDStrip
@@ -64,11 +64,11 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION		// remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "Bottle"				// Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "LEDs"				// Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0				// The following types are available
 /*
-	0: Generic LED-Strip: Just a regular LED-Strip without special hardware
+	0: Generic LED-Strip: a regular LED-Strip without any special arrangement (and Infinity Mirror + Bottle Lighting Pad)
 		* Easiest: 5V WS2812B LED-Strip:		https://s.click.aliexpress.com/e/_dZ1hCJ7
 		* (Long Ranges) 12V WS2811 LED-Strip:	https://s.click.aliexpress.com/e/_d7Ehe3L
 	    * (High-Speed) 5V SK9822 LED-Strip:		https://s.click.aliexpress.com/e/_d8pzc89
@@ -142,15 +142,15 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 	//#define ACCESS_POINT_MODE				// the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
-	#define ENABLE_OTA_SUPPORT				// requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+	//#define ENABLE_OTA_SUPPORT				// requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
 		//#define OTA_PASSWORD "passwd123"	//  password that is required to update the esp's firmware wireless
 
-	#define ENABLE_MULTICAST_DNS			// allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
+	//#define ENABLE_MULTICAST_DNS			// allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
 
 	#define RANDOM_AUTOPLAY_PATTERN			// if enabled the next pattern for autoplay is choosen at random
 	#define AUTOPLAY_IGNORE_UDP_PATTERNS	// remove visualization patterns from autoplay
 
-	#define ENABLE_ALEXA_SUPPORT			// Espalexa library required
+	//#define ENABLE_ALEXA_SUPPORT			// Espalexa library required
 
 	//#define SOUND_SENSOR_SUPPORT			// allows to control the leds using a physical sound-sensor, configuration below
 
