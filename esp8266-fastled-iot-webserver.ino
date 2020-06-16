@@ -24,7 +24,6 @@ extern "C" {
 }
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266HTTPUpdateServer.h>
 #include <FS.h>
 #include <EEPROM.h>
 #include "GradientPalettes.h"
@@ -364,7 +363,6 @@ if you have connected the ring first it should look like this: const int twpOffs
 #endif
 
 ESP8266WebServer webServer(80);
-ESP8266HTTPUpdateServer httpUpdateServer;
 
 #include "FSBrowser.h"
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -906,8 +904,6 @@ void setup() {
 		});
 #endif
 
-	httpUpdateServer.setup(&webServer);
-
 	webServer.on("/all", HTTP_GET, []() {
 		String json = getFieldsJson(fields, fieldCount);
 		json += ",{\"name\":\"lines\",\"label\":\"Amount of Lines for the Visualizer\",\"type\":\"String\",\"value\":";
@@ -955,8 +951,7 @@ void setup() {
 
 	webServer.on("/speed", HTTP_POST, []() {
 		String value = webServer.arg("value");
-		speed = value.toInt();
-		broadcastInt("speed", speed);
+		setSpeed(value.toInt());
 		sendInt(speed);
 		});
 
@@ -1274,6 +1269,7 @@ void loadSettings()
 		currentPaletteIndex = 0;
 	else if (currentPaletteIndex >= paletteCount)
 		currentPaletteIndex = paletteCount - 1;
+	speed = EEPROM.read(9);
 }
 
 void setPower(uint8_t value)
@@ -1438,6 +1434,22 @@ void setBrightness(uint8_t value)
 	EEPROM.commit();
 
 	broadcastInt("brightness", brightness);
+}
+
+void setSpeed(uint8_t value)
+{
+	if (value > 255)
+		value = 255;
+	else if (value < 0) value = 0;
+
+	speed = value;
+
+	FastLED.setBrightness(brightness);
+
+	EEPROM.write(9, speed);
+	EEPROM.commit();
+
+	broadcastInt("speed", brightness);
 }
 
 void strandTest()
