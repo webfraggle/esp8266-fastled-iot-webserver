@@ -70,9 +70,13 @@ All of my recent project were merged into one including most of the features. A 
 * Project link, Twenty-One-Pilots Logo:		https://www.thingiverse.com/thing:3523487
 * Project link, Thingiverse Logo:			https://www.thingiverse.com/thing:3531086
 
-**3D-Printed Infinity Mirror**, a DIY infinity mirror inspired by Adafruit
+**(soon) 3D-Printed Infinity Mirror**, a DIY infinity mirror inspired by Adafruit
 
 * Project link, Sound Reactive Infinity Mirror:		https://www.thingiverse.com/thing:4461070
+
+**3D-Printed IoT Bottle Lighting Pad**, a simple but smart lighting for any bottle you want.
+
+* Project link, IoT Bottle Lighting Pad:		https://www.thingiverse.com/thing:4461313
 
 
 
