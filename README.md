@@ -107,28 +107,6 @@ All of my recent project were merged into one including most of the features. A 
 - Alexa support via NodeRED
 
 
-
-### Bill of Materials
-
-- 1x [Wemos D1 mini](https://s.click.aliexpress.com/e/_dTVGMGl) is recommended, but any other ESP8266 variant should work too, but it might require an additional step-down converter.
-- [WS2812B LED Strip **IP30**](https://s.click.aliexpress.com/e/_dZ1hCJ7), only IP30 will fit inside the nanoleafs, I'll recommend at least 60LEDs/m
-- 1x [3.3V to 5V Logic Level Shifter](http://s.click.aliexpress.com/e/_s49Saz) (optional, required if LEDs "glitch")
-- 1x [Female Power Jack](http://s.click.aliexpress.com/e/_sPe0RR)
-- 1x [5V Power Supply](https://s.click.aliexpress.com/e/_dY5zCWt), Note: 100 LEDs draw around 3A
-- (Optional) [Solderless LED-Connectors](https://s.click.aliexpress.com/e/_dV4rsjF)
-
-
-
-Hardware
---------
-
-**Check out the project on [Thingiverse](https://www.thingiverse.com/thing:3354082) for more details.**
-
-[![https://www.thingiverse.com/Surrbradl08/things](https://cdn.thingiverse.com/site/img/thingiverse-logo-2015.png)](https://www.thingiverse.com/thing:3354082)
-
-
-
-
 Installation
 --------
 **FOR INSTALLATION REFER TO THE [Software_Installation.md](Software_Installation.md)**
