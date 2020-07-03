@@ -111,7 +111,7 @@ The video wasn't updated for the new update, so the library versions are incorre
    ![](software_screenshots/secret.png?raw=true)
 
 5. Configure the main parameters
-   In the .ino file there are many parameters to change and tweak the essential settings are:
+   In the esp8266-fastled-iot-webserver.ino file there are many parameters to change and tweak the essential settings are:
 - `LED_TYPE`: The type of LED strip that is used (WS2812B, APA102, ...)
 - `DATA_PIN`: The pin where the LED-Strip is connected
 - `CLK_PIN`:  Additional clock pin when using LED-Strips with 4 pins.
@@ -171,7 +171,7 @@ This type is used for the [twisted](https://www.thingiverse.com/thing:4129249) o
 Parameters:
 
 - `LINE_COUNT`: Amount of the LED strip lines, (with the provided cores it's 8)
-- `PIXELS_PER_LEAF`: Amount of the LEDs inside one triangle
+- `LEDS_PER_LINE`: Amount of the LEDs inside one triangle
 
 #### 2.2.4 [4] Nanoleaf Replica
 
@@ -180,7 +180,7 @@ This type is used for the [3D-Printed Nanoleafs](https://www.thingiverse.com/thi
 Parameters:
 
 - `LEAFCOUNT`: Amount of the LED strip lines, (with the provided cores it's 8)
-- `LEDS_PER_LINE`: Amount of the LEDs per strip
+- `PIXELS_PER_LEAF`: Amount of the LEDs per strip
 
 #### 2.2.5 [5] Animated RGB-Logos
 
