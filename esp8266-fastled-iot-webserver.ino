@@ -622,7 +622,7 @@ const String paletteNames[paletteCount] = {
 
 
 
-void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern = true)
+void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
 {
     solidColor = CRGB(r, g, b);
 
@@ -636,7 +636,7 @@ void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern = true)
     broadcastString("color", String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
 }
 
-void setSolidColor(CRGB color, bool updatePattern = true)
+void setSolidColor(CRGB color, bool updatePattern)
 {
     setSolidColor(color.r, color.g, color.b, updatePattern);
 }
@@ -661,7 +661,7 @@ void handleReboot2()
 }
 #endif // ENABLE_ALEXA_SUPPORT
 
-void addRebootPage(int webServerNr = 0)
+void addRebootPage(int webServerNr)
 {
     if (webServerNr < 2)
     {
@@ -1770,8 +1770,8 @@ void addGlitter(uint8_t chanceOfGlitter)
 extern const TProgmemRGBGradientPalettePtr gGradientPalettes[];
 extern const uint8_t gGradientPaletteCount;
 
-uint8_t beatsaw8(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255,
-    uint32_t timebase = 0, uint8_t phase_offset = 0)
+uint8_t beatsaw8(accum88 beats_per_minute, uint8_t lowest, uint8_t highest,
+    uint32_t timebase, uint8_t phase_offset)
 {
     uint8_t beat = beat8(beats_per_minute, timebase);
     uint8_t beatsaw = beat + phase_offset;
@@ -2569,7 +2569,7 @@ bool parseUdp()
 
 //############################## Misc
 
-int getVolume(uint8_t vals[], int start, int end, double factor = 1.0)
+int getVolume(uint8_t vals[], int start, int end, double factor)
 {
     int result = 0;
     int iter = 0;
@@ -2603,8 +2603,8 @@ void BrightnessVisualizer()
 
     if (!parseUdp())return;
     //if (incomingPacket[0] != 0) 
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     //Serial.printf("%d, %d, %lf\n", currentVolume, avgVolume, cd);
     if (currentVolume < 30)cd = 0;
@@ -2667,8 +2667,8 @@ void TrailingBulletsVisualizer()
         ShiftLeds(1);
         return;
     }
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
@@ -2716,7 +2716,7 @@ CHSV getVisualizerBulletValue(int hue, double cd)
 
 
 
-void vuMeter(CHSV c, int mode = 0)
+void vuMeter(CHSV c, int mode)
 {
     int vol = getVolume(incomingPacket, BAND_START, BAND_END, 1.75);
     fill_solid(leds, NUM_LEDS, CRGB::Black);
@@ -2782,7 +2782,7 @@ void vuMeterSolid()
         fadeToBlackBy(leds, NUM_LEDS, 5);
         return;
     }
-    vuMeter(rgb2hsv_approximate(solidColor));
+    vuMeter(rgb2hsv_approximate(solidColor), 0);
 }
 
 void vuMeterStaticRainbow()
@@ -2812,7 +2812,7 @@ void vuMeterFading()
         fadeToBlackBy(leds, NUM_LEDS, 5);
         return;
     }
-    vuMeter(CHSV(gHue, 255, 255));
+    vuMeter(CHSV(gHue, 255, 255), 0);
 }
 
 void NanoleafWaves()
@@ -2830,8 +2830,8 @@ void NanoleafWaves()
         ShiftLeds(1);
         return;
     }
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
@@ -2874,8 +2874,8 @@ void RefreshingVisualizer()
         ShiftLeds(1);
         return;
     }
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
@@ -2918,8 +2918,8 @@ void DualToneBullets(int hueA, int hueB, int grpsz)
         ShiftLeds(1);
         return;
     }
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
@@ -2979,7 +2979,7 @@ void BluePurpleBullets() {
     DualToneBullets(240, 170, BULLET_COLOR_SIZE);
 }
 
-int expo(double x, double start = 0)
+int expo(double x, double start)
 {
     double res = 10.0 * (pow(1.02, x)) - 10.0 + start;
     if (res > 255)res = 255;
@@ -2987,7 +2987,7 @@ int expo(double x, double start = 0)
     return (int)res;
 }
 
-void Band(int grpSize, CRGB x, int mergePacket = 1)
+void Band(int grpSize, CRGB x, int mergePacket)
 {
     if (!parseUdp())
     {
@@ -3060,8 +3060,8 @@ void BulletVisualizer()
         return;
     }
     //if (incomingPacket[0] != 0) 
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
@@ -3105,8 +3105,8 @@ void CentralVisualizer()
         ShiftLedsCenter(1);
         return;
     }
-    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END);
-    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1);
+    currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+    avgVolume = getVolume(lastVals, 0, AVG_ARRAY_SIZE - 1, 1);
     if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
     if (currentVolume < 25)cd = 0;
     if (currentVolume > 230) cd += 0.15;
