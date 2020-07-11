@@ -561,7 +561,7 @@ PatternAndNameList patterns = {
     { SolidColorComplementary,            "Solid-Color Complementary Bullet Visualizer"},
     { BluePurpleBullets,                "Blue/Purple Bullet Visualizer"},
     { BulletVisualizer,                    "Beat-Bullet Visualization"},
-    { RainbowPeaks,                     "Rainbow Peak Visualizer"},
+    //{ RainbowPeaks,                     "Rainbow Peak Visualizer"},               // broken
     //{ TrailingBulletsVisualizer,        "Trailing Bullet Visualization"},        // obsolete
     //{ BrightnessVisualizer,                "Brightness Visualizer"},            // broken
     { RainbowBandVisualizer,            "Rainbow Band Visualizer"},
