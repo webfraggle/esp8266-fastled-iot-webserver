@@ -63,7 +63,7 @@ The video wasn't updated for the new update, so the library versions are incorre
    ![](software_screenshots/espalexa.png?raw=true)
 
 8. *(Optional)* Install ArduinoOTA for flashing the ESP8266 via WiFi (requires Python 2.7)
-   Click on *Sketch >> Include Library >> Manage Libraries* and install **Espalexa, version 2.4.4**
+   Click on *Sketch >> Include Library >> Manage Libraries* and install **ArduinoOTA**
 
    ![](software_screenshots/ota.png?raw=true)
    
