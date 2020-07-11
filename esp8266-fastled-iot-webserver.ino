@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
-#define FASTLED_ALLOW_INTERRUPTS 0
+//#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 FASTLED_USING_NAMESPACE
 extern "C" {
@@ -64,7 +64,7 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "LEDs"                 // Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "Jaeger"                 // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 /*
@@ -100,7 +100,7 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 24
+    #define NUM_LEDS (4+4+3+3)
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
@@ -142,10 +142,10 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
     //#define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
-    //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+    #define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
-    //#define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
+    #define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
 
     #define RANDOM_AUTOPLAY_PATTERN             // if enabled the next pattern for autoplay is choosen at random
     #define AUTOPLAY_IGNORE_UDP_PATTERNS        // remove visualization patterns from autoplay
@@ -561,6 +561,7 @@ PatternAndNameList patterns = {
     { SolidColorComplementary,            "Solid-Color Complementary Bullet Visualizer"},
     { BluePurpleBullets,                "Blue/Purple Bullet Visualizer"},
     { BulletVisualizer,                    "Beat-Bullet Visualization"},
+    { RainbowPeaks,                     "Rainbow Peak Visualizer"},
     //{ TrailingBulletsVisualizer,        "Trailing Bullet Visualization"},        // obsolete
     //{ BrightnessVisualizer,                "Brightness Visualizer"},            // broken
     { RainbowBandVisualizer,            "Rainbow Band Visualizer"},
@@ -2772,6 +2773,79 @@ void vuMeterTriColor()
         fill_solid(leds + (int(NUM_LEDS * 0.8)), toPaint - NUM_LEDS * 0.8, CRGB::Red);
     }
 #endif
+}
+
+int getPeakPosition() {
+    int pos = 0;
+    byte posval = 0;
+    for (int i = 0; i <= (PACKET_LENGTH - 1) && incomingPacket[i] != '\0'; i++)
+    {
+        if (incomingPacket[i] > posval) {
+            pos = i;
+            posval = incomingPacket[i];
+        }
+    }
+    if (posval < 30) pos = -1;
+    return pos;
+}
+
+void printPeak(CHSV c, int pos, int grpSize) {
+    fadeToBlackBy(leds, NUM_LEDS, 12);
+    leds[pos] = c;
+    CHSV c2 = c;
+    c2.v = 150;
+    for (int i = 0; i < ((grpSize - 1) / 2); i++)
+    {
+        leds[pos + i] = c;
+        leds[pos - i] = c;
+    }
+    
+}
+
+void peakVisualizer(CHSV c, bool newValues) {
+    static int lastPos = 0;
+    static int moveDir = 1; // 1: up, 0: down, 2: static
+    int newPos = lastPos;
+    if (newValues) {
+        newPos = getPeakPosition();
+        if (newPos > lastPos) moveDir = 1;
+        else if (newPos < lastPos) moveDir = 0;
+        else moveDir = 2;
+    }
+
+    int v = 3;
+    if (moveDir == 1 && (lastPos +v) <= newPos) {
+        lastPos += v;
+    }
+    else if (moveDir == 0 && (lastPos - v) >= newPos) {
+        lastPos -= v;
+    }
+
+    int update_rate = map(speed, 0, 70, 100, 0);
+    if (newPos == -1 || lastPos < 0) {
+        fadeToBlackBy(leds, NUM_LEDS, 5);
+        lastPos == -1;
+        moveDir = 2;
+    }
+    else if (update_rate >= 0)
+    {
+        printPeak(c, lastPos, v);
+        delay(update_rate);
+    }
+    else
+    {
+        int steps = map(update_rate, -264, 0, 8, 0);
+        ShiftLeds(steps);
+    }
+    //lastPos = newPos;
+}
+
+void RainbowPeaks()
+{
+    if (!parseUdp())
+    {
+        peakVisualizer(rgb2hsv_approximate(solidColor), false);
+    } else peakVisualizer(rgb2hsv_approximate(solidColor), true);
 }
 
 
