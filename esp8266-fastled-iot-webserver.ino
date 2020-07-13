@@ -877,7 +877,7 @@ void setup() {
         }
         });
 
-    addRebootPage();
+    addRebootPage(0);
 
     webServer.on("/alexa", HTTP_GET, []() {
         IPAddress ip = WiFi.localIP();
@@ -3632,7 +3632,7 @@ void AlexaStrobeEvent(EspalexaDevice* d) {
     static int lb;
     if ((lr != NULL && lr != d->getR() && lg != d->getG() && lb != d->getB()) || currentPatternIndex == patternCount - 1)
     {
-        setSolidColor(d->getR(), d->getG(), d->getB());
+        setSolidColor(d->getR(), d->getG(), d->getB(), true);
         setPattern(12);
     }
     lr = d->getR();
