@@ -64,7 +64,7 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "Jaeger"                 // Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "Bottle"                 // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 /*
@@ -100,7 +100,7 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS (4+4+3+3)
+    #define NUM_LEDS (24)
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
@@ -353,7 +353,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 
 // Misc Params
 #define AVG_ARRAY_SIZE 10
-#define BAND_START 1
+#define BAND_START 0
 #define BAND_END 3        // can be increased when working with bigger spectrums (40+)
 #define UDP_PORT 4210
 
@@ -562,6 +562,8 @@ PatternAndNameList patterns = {
     { BluePurpleBullets,                "Blue/Purple Bullet Visualizer"},
     { BulletVisualizer,                    "Beat-Bullet Visualization"},
     //{ RainbowPeaks,                     "Rainbow Peak Visualizer"},               // broken
+    { RainbowBassRings,                "Bass Ring Visualizer"},
+    { RainbowKickRings,                "Kick Ring Visualizer"},
     //{ TrailingBulletsVisualizer,        "Trailing Bullet Visualization"},        // obsolete
     //{ BrightnessVisualizer,                "Brightness Visualizer"},            // broken
     { RainbowBandVisualizer,            "Rainbow Band Visualizer"},
@@ -1250,7 +1252,8 @@ void loop() {
     FastLED.show();
 
     // insert a delay to keep the framerate modest
-    FastLED.delay(1000 / FRAMES_PER_SECOND);
+    //FastLED.delay(1000 / FRAMES_PER_SECOND);
+    delay(1000 / FRAMES_PER_SECOND);
 }
 
 void loadSettings()
@@ -2572,17 +2575,17 @@ bool parseUdp()
 
 int getVolume(uint8_t vals[], int start, int end, double factor)
 {
-    int result = 0;
+    double result = 0;
     int iter = 0;
-    //Serial.printf("%d, start: %d, end: %d\n", vals[iter], start, end);
+    int cnt = 0;
+    //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
     for (iter = start; iter <= end && vals[iter] != '\0'; iter++)
     {
-        //Serial.println(vals[iter]);
-        result += vals[iter];
+        //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
+        result += ((double)vals[iter]*factor)/(end-start + 1);
     }
-    if (result == 0)return 0;
-    if(end > start)result = result / (end-start);
-    result = int(((double)result) * factor);
+    //Serial.println(result);
+    if (result <= 1) result = 0;
     if (result > 255)result = 255;
     return result;
 }
@@ -2848,6 +2851,93 @@ void RainbowPeaks()
     } else peakVisualizer(rgb2hsv_approximate(solidColor), true);
 }
 
+void RainbowKickRings()
+{
+    if (!parseUdp())
+    {
+        kickRingVisualizer(CHSV(gHue, 255, 255), false);
+    }
+    else kickRingVisualizer(CHSV(gHue, 255, 255), true);
+}
+
+void RainbowBassRings()
+{
+    if (!parseUdp())
+    {
+        bassRingVisualizer(CHSV(gHue, 255, 255), false);
+    }
+    else bassRingVisualizer(CHSV(gHue, 255, 255), true);
+}
+
+#define RING_FILL_PERCENTAGE 0.35
+#define RING_FADED_PERCENTAGE 0.25
+void bassRingVisualizer(CHSV c, bool newValues) {
+    static double position = 5.0;
+    if (newValues)
+    {
+        double currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1) / 200.0;
+        position += currentVolume * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
+        if (position >= NUM_LEDS)position -= NUM_LEDS;
+    }
+    paintRing(c, position, NUM_LEDS * RING_FILL_PERCENTAGE, NUM_LEDS * RING_FADED_PERCENTAGE);
+}
+
+void kickRingVisualizer(CHSV c, bool newValues) {
+    static double position = 5.0;
+    static int i_pos = 0;
+    static int arrsize = 5;
+    static uint8_t lastVals[5] = { 1,1,1,1,1 };
+    int currentVolume = 0;
+    int avgVolume = 0;
+    double cd = 0;
+    if (newValues)
+    {
+        currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+        avgVolume = getVolume(lastVals, 0, arrsize - 1, 1);
+        if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
+        if (currentVolume < 33)cd = 0;
+        if (currentVolume > 230) cd += 0.15;
+        cd -= 0.5;
+        if (cd <= 0 || currentVolume < 33)cd = 0;
+        else cd += 0.5;
+        position += cd * 1.5 * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
+        //Serial.printf("cur: %d, avg: %d, cd: %lf, pos: %lf\n", currentVolume, avgVolume, cd, position);
+        while (position >= NUM_LEDS)position -= NUM_LEDS;
+
+        if (i_pos >= arrsize)i_pos = 0;
+        lastVals[i_pos] = currentVolume;
+        i_pos++;
+    }
+    paintRing(c, position, NUM_LEDS * RING_FILL_PERCENTAGE, NUM_LEDS * RING_FADED_PERCENTAGE);
+}
+
+void paintRing(CHSV c, int pos, int fillLength, int fadedLength)
+{
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    for (int i = 0; i < fadedLength; i++)
+    {
+        leds[(i + pos) > (NUM_LEDS - 1) ? (i + pos - NUM_LEDS) : (i + pos)] = getFadedColor(c, fadedLength - i, fadedLength);
+    }
+    for (int i = 0; i < fillLength; i++)
+    {
+        leds[(i + pos + fadedLength) > (NUM_LEDS - 1) ? (i + pos + fadedLength - NUM_LEDS) : (i + pos + fadedLength)] = c;
+    }
+    for (int i = 0; i < fadedLength; i++)
+    {
+        leds[(i + pos + fadedLength + fillLength) > (NUM_LEDS - 1) ? (i + pos + fadedLength + fillLength - NUM_LEDS) : (i + pos + fadedLength + fillLength)] = getFadedColor(c, i, fadedLength);;
+    }
+}
+
+CHSV getFadedColor(CHSV c, int iter, int amount)
+{
+    c.val = (int)((double)c.val * ((double)(amount - iter)) / ((double)(amount+1.0)));
+    return c;
+}
+
+//void paintRing(CHSV c, int fillStart, int fillEnd, int fadedStart, int fadedEnd)
+//{
+//    return;
+//}
 
 void vuMeterSolid()
 {
