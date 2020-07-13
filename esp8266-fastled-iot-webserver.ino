@@ -2897,10 +2897,10 @@ void kickRingVisualizer(CHSV c, bool newValues) {
         if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
         if (currentVolume < 33)cd = 0;
         if (currentVolume > 230) cd += 0.15;
-        cd -= 0.5;
+        cd -= 0.2;
         if (cd <= 0 || currentVolume < 33)cd = 0;
-        else cd += 0.5;
-        position += cd * 1.5 * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
+        else cd += 0.2;
+        position += cd * 2 * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
         //Serial.printf("cur: %d, avg: %d, cd: %lf, pos: %lf\n", currentVolume, avgVolume, cd, position);
         while (position >= NUM_LEDS)position -= NUM_LEDS;
 
