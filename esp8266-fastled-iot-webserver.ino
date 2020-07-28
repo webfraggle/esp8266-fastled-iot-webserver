@@ -64,7 +64,7 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "Bottle"                 // Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "LEDs"                 // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 /*
@@ -100,7 +100,7 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS (24)
+    #define NUM_LEDS 24
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
@@ -313,10 +313,11 @@ if you have connected the ring first it should look like this: const int twpOffs
     #define PACKET_LENGTH LENGTH
     #define NUM_LEDS (HEIGHT * LENGTH)
     #define PACKET_LENGTH LENGTH
+    #define BAND_GROUPING    1
 
 #elif DEVICE_TYPE == 2
     #define PACKET_LENGTH NUM_LEDS
-
+    #define BAND_GROUPING    1
     IPAddress timeServerIP;
     WiFiUDP udpTime;
 
@@ -330,12 +331,15 @@ if you have connected the ring first it should look like this: const int twpOffs
 #elif DEVICE_TYPE == 3
     #define NUM_LEDS      (LINE_COUNT * LEDS_PER_LINE)
     #define PACKET_LENGTH LEDS_PER_LINE
+    #define BAND_GROUPING    1
 
 #elif DEVICE_TYPE == 4
     #define NUM_LEDS (PIXELS_PER_LEAF * LEAFCOUNT)
     #define PACKET_LENGTH (LEAFCOUNT * 3)
+    #define BAND_GROUPING    1
 
 #elif VISUALIZER_TYPE == 5
+    #define BAND_GROUPING    1
     #ifdef TWENTYONEPILOTS
         #define NUM_LEDS      (RING_LENGTH+DOT_LENGTH+DOUBLE_STRIP_LENGTH+ITALIC_STRIP_LENGTH)
     #endif
@@ -880,7 +884,7 @@ void setup() {
         }
         });
 
-    addRebootPage();
+    addRebootPage(0);
 
     webServer.on("/alexa", HTTP_GET, []() {
         IPAddress ip = WiFi.localIP();
@@ -3769,7 +3773,7 @@ void mainAlexaEvent(EspalexaDevice* d) {
     static int lb;
     if ((lr != NULL && lr != d->getR() && lg != d->getG() && lb != d->getB()) || currentPatternIndex == patternCount - 1)
     {
-        setSolidColor(d->getR(), d->getG(), d->getB());
+        setSolidColor(d->getR(), d->getG(), d->getB(), true);
         setPattern(patternCount - 1);
     }
     lr = d->getR();
