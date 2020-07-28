@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
-#define FASTLED_ALLOW_INTERRUPTS 0
+//#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 FASTLED_USING_NAMESPACE
 extern "C" {
@@ -142,10 +142,10 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
     //#define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
-    //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+    #define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
-    //#define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
+    #define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
 
     #define RANDOM_AUTOPLAY_PATTERN             // if enabled the next pattern for autoplay is choosen at random
     #define AUTOPLAY_IGNORE_UDP_PATTERNS        // remove visualization patterns from autoplay
@@ -313,10 +313,11 @@ if you have connected the ring first it should look like this: const int twpOffs
     #define PACKET_LENGTH LENGTH
     #define NUM_LEDS (HEIGHT * LENGTH)
     #define PACKET_LENGTH LENGTH
+    #define BAND_GROUPING    1
 
 #elif DEVICE_TYPE == 2
     #define PACKET_LENGTH NUM_LEDS
-
+    #define BAND_GROUPING    1
     IPAddress timeServerIP;
     WiFiUDP udpTime;
 
@@ -330,12 +331,15 @@ if you have connected the ring first it should look like this: const int twpOffs
 #elif DEVICE_TYPE == 3
     #define NUM_LEDS      (LINE_COUNT * LEDS_PER_LINE)
     #define PACKET_LENGTH LEDS_PER_LINE
+    #define BAND_GROUPING    1
 
 #elif DEVICE_TYPE == 4
     #define NUM_LEDS (PIXELS_PER_LEAF * LEAFCOUNT)
     #define PACKET_LENGTH (LEAFCOUNT * 3)
+    #define BAND_GROUPING    1
 
 #elif VISUALIZER_TYPE == 5
+    #define BAND_GROUPING    1
     #ifdef TWENTYONEPILOTS
         #define NUM_LEDS      (RING_LENGTH+DOT_LENGTH+DOUBLE_STRIP_LENGTH+ITALIC_STRIP_LENGTH)
     #endif
@@ -353,7 +357,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 
 // Misc Params
 #define AVG_ARRAY_SIZE 10
-#define BAND_START 1
+#define BAND_START 0
 #define BAND_END 3        // can be increased when working with bigger spectrums (40+)
 #define UDP_PORT 4210
 
@@ -561,6 +565,9 @@ PatternAndNameList patterns = {
     { SolidColorComplementary,            "Solid-Color Complementary Bullet Visualizer"},
     { BluePurpleBullets,                "Blue/Purple Bullet Visualizer"},
     { BulletVisualizer,                    "Beat-Bullet Visualization"},
+    //{ RainbowPeaks,                     "Rainbow Peak Visualizer"},               // broken
+    { RainbowBassRings,                "Bass Ring Visualizer"},
+    { RainbowKickRings,                "Kick Ring Visualizer"},
     //{ TrailingBulletsVisualizer,        "Trailing Bullet Visualization"},        // obsolete
     //{ BrightnessVisualizer,                "Brightness Visualizer"},            // broken
     { RainbowBandVisualizer,            "Rainbow Band Visualizer"},
@@ -1249,7 +1256,8 @@ void loop() {
     FastLED.show();
 
     // insert a delay to keep the framerate modest
-    FastLED.delay(1000 / FRAMES_PER_SECOND);
+    //FastLED.delay(1000 / FRAMES_PER_SECOND);
+    delay(1000 / FRAMES_PER_SECOND);
 }
 
 void loadSettings()
@@ -2571,17 +2579,17 @@ bool parseUdp()
 
 int getVolume(uint8_t vals[], int start, int end, double factor)
 {
-    int result = 0;
+    double result = 0;
     int iter = 0;
-    //Serial.printf("%d, start: %d, end: %d\n", vals[iter], start, end);
+    int cnt = 0;
+    //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
     for (iter = start; iter <= end && vals[iter] != '\0'; iter++)
     {
-        //Serial.println(vals[iter]);
-        result += vals[iter];
+        //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
+        result += ((double)vals[iter]*factor)/(end-start + 1);
     }
-    if (result == 0)return 0;
-    if(end > start)result = result / (end-start);
-    result = int(((double)result) * factor);
+    //Serial.println(result);
+    if (result <= 1) result = 0;
     if (result > 255)result = 255;
     return result;
 }
@@ -2774,6 +2782,166 @@ void vuMeterTriColor()
 #endif
 }
 
+int getPeakPosition() {
+    int pos = 0;
+    byte posval = 0;
+    for (int i = 0; i <= (PACKET_LENGTH - 1) && incomingPacket[i] != '\0'; i++)
+    {
+        if (incomingPacket[i] > posval) {
+            pos = i;
+            posval = incomingPacket[i];
+        }
+    }
+    if (posval < 30) pos = -1;
+    return pos;
+}
+
+void printPeak(CHSV c, int pos, int grpSize) {
+    fadeToBlackBy(leds, NUM_LEDS, 12);
+    leds[pos] = c;
+    CHSV c2 = c;
+    c2.v = 150;
+    for (int i = 0; i < ((grpSize - 1) / 2); i++)
+    {
+        leds[pos + i] = c;
+        leds[pos - i] = c;
+    }
+    
+}
+
+void peakVisualizer(CHSV c, bool newValues) {
+    static int lastPos = 0;
+    static int moveDir = 1; // 1: up, 0: down, 2: static
+    int newPos = lastPos;
+    if (newValues) {
+        newPos = getPeakPosition();
+        if (newPos > lastPos) moveDir = 1;
+        else if (newPos < lastPos) moveDir = 0;
+        else moveDir = 2;
+    }
+
+    int v = 3;
+    if (moveDir == 1 && (lastPos +v) <= newPos) {
+        lastPos += v;
+    }
+    else if (moveDir == 0 && (lastPos - v) >= newPos) {
+        lastPos -= v;
+    }
+
+    int update_rate = map(speed, 0, 70, 100, 0);
+    if (newPos == -1 || lastPos < 0) {
+        fadeToBlackBy(leds, NUM_LEDS, 5);
+        lastPos == -1;
+        moveDir = 2;
+    }
+    else if (update_rate >= 0)
+    {
+        printPeak(c, lastPos, v);
+        delay(update_rate);
+    }
+    else
+    {
+        int steps = map(update_rate, -264, 0, 8, 0);
+        ShiftLeds(steps);
+    }
+    //lastPos = newPos;
+}
+
+void RainbowPeaks()
+{
+    if (!parseUdp())
+    {
+        peakVisualizer(rgb2hsv_approximate(solidColor), false);
+    } else peakVisualizer(rgb2hsv_approximate(solidColor), true);
+}
+
+void RainbowKickRings()
+{
+    if (!parseUdp())
+    {
+        kickRingVisualizer(CHSV(gHue, 255, 255), false);
+    }
+    else kickRingVisualizer(CHSV(gHue, 255, 255), true);
+}
+
+void RainbowBassRings()
+{
+    if (!parseUdp())
+    {
+        bassRingVisualizer(CHSV(gHue, 255, 255), false);
+    }
+    else bassRingVisualizer(CHSV(gHue, 255, 255), true);
+}
+
+#define RING_FILL_PERCENTAGE 0.35
+#define RING_FADED_PERCENTAGE 0.25
+void bassRingVisualizer(CHSV c, bool newValues) {
+    static double position = 5.0;
+    if (newValues)
+    {
+        double currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1) / 200.0;
+        position += currentVolume * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
+        if (position >= NUM_LEDS)position -= NUM_LEDS;
+    }
+    paintRing(c, position, NUM_LEDS * RING_FILL_PERCENTAGE, NUM_LEDS * RING_FADED_PERCENTAGE);
+}
+
+void kickRingVisualizer(CHSV c, bool newValues) {
+    static double position = 5.0;
+    static int i_pos = 0;
+    static int arrsize = 5;
+    static uint8_t lastVals[5] = { 1,1,1,1,1 };
+    int currentVolume = 0;
+    int avgVolume = 0;
+    double cd = 0;
+    if (newValues)
+    {
+        currentVolume = getVolume(incomingPacket, BAND_START, BAND_END, 1);
+        avgVolume = getVolume(lastVals, 0, arrsize - 1, 1);
+        if (avgVolume != 0)cd = ((double)currentVolume) / ((double)avgVolume);
+        if (currentVolume < 33)cd = 0;
+        if (currentVolume > 230) cd += 0.15;
+        cd -= 0.2;
+        if (cd <= 0 || currentVolume < 33)cd = 0;
+        else cd += 0.2;
+        position += cd * 2 * ((double)(map(speed, 0, 255, 10, 300) / 100.0)) * BAND_GROUPING;
+        //Serial.printf("cur: %d, avg: %d, cd: %lf, pos: %lf\n", currentVolume, avgVolume, cd, position);
+        while (position >= NUM_LEDS)position -= NUM_LEDS;
+
+        if (i_pos >= arrsize)i_pos = 0;
+        lastVals[i_pos] = currentVolume;
+        i_pos++;
+    }
+    paintRing(c, position, NUM_LEDS * RING_FILL_PERCENTAGE, NUM_LEDS * RING_FADED_PERCENTAGE);
+}
+
+void paintRing(CHSV c, int pos, int fillLength, int fadedLength)
+{
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    for (int i = 0; i < fadedLength; i++)
+    {
+        leds[(i + pos) > (NUM_LEDS - 1) ? (i + pos - NUM_LEDS) : (i + pos)] = getFadedColor(c, fadedLength - i, fadedLength);
+    }
+    for (int i = 0; i < fillLength; i++)
+    {
+        leds[(i + pos + fadedLength) > (NUM_LEDS - 1) ? (i + pos + fadedLength - NUM_LEDS) : (i + pos + fadedLength)] = c;
+    }
+    for (int i = 0; i < fadedLength; i++)
+    {
+        leds[(i + pos + fadedLength + fillLength) > (NUM_LEDS - 1) ? (i + pos + fadedLength + fillLength - NUM_LEDS) : (i + pos + fadedLength + fillLength)] = getFadedColor(c, i, fadedLength);;
+    }
+}
+
+CHSV getFadedColor(CHSV c, int iter, int amount)
+{
+    c.val = (int)((double)c.val * ((double)(amount - iter)) / ((double)(amount+1.0)));
+    return c;
+}
+
+//void paintRing(CHSV c, int fillStart, int fillEnd, int fadedStart, int fadedEnd)
+//{
+//    return;
+//}
 
 void vuMeterSolid()
 {
@@ -3605,7 +3773,7 @@ void mainAlexaEvent(EspalexaDevice* d) {
     static int lb;
     if ((lr != NULL && lr != d->getR() && lg != d->getG() && lb != d->getB()) || currentPatternIndex == patternCount - 1)
     {
-        setSolidColor(d->getR(), d->getG(), d->getB());
+        setSolidColor(d->getR(), d->getG(), d->getB(), true);
         setPattern(patternCount - 1);
     }
     lr = d->getR();
