@@ -64,7 +64,7 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "Party"                 // Name that appears in your network, don't use whitespaces, use "-" instead
+#define HOSTNAME "LEDs"                 // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 /*
@@ -100,7 +100,7 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS (13*4)
+    #define NUM_LEDS 24
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
@@ -150,7 +150,7 @@ extern "C" {
     #define RANDOM_AUTOPLAY_PATTERN             // if enabled the next pattern for autoplay is choosen at random
     #define AUTOPLAY_IGNORE_UDP_PATTERNS        // remove visualization patterns from autoplay
 
-    #define ENABLE_ALEXA_SUPPORT              // Espalexa library required
+    //#define ENABLE_ALEXA_SUPPORT              // Espalexa library required
 
     //#define SOUND_SENSOR_SUPPORT              // allows to control the leds using a physical sound-sensor, configuration below
 
