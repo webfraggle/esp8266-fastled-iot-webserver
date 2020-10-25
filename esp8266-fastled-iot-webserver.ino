@@ -478,6 +478,7 @@ PatternAndNameList patterns = {
     // Time patterns
   #if DEVICE_TYPE == 2                
     { displayTimeStatic,      "Time" },
+    { displayTimeColorful,     "Time Colorful" },
     { displayTimeRainbow,     "Time Rainbow" },
   #endif
 
@@ -2362,9 +2363,16 @@ bool shouldUpdateTime()
     return false;
 }
 
-void DrawDots(int r, int g, int b)
+void DrawDots(int r, int g, int b, int hueMode)
 {
-    for (int i = 2*Digit2; i < Digit2; i++) leds[i] = CRGB(r, g, b);
+    for (int i = 2 * Digit2; i < Digit3; i++) {
+        if (hueMode == 1) {
+            int hue = map(i, 0, NUM_LEDS, 0, 255) + gHue;
+            if (hue >= 255) hue -= 255;
+            leds[i] = CHSV(map(hue, 0, NUM_LEDS, 0,255), 255,255);
+        }
+        else leds[i] = CRGB(r, g, b);
+    }
 }
 
 void displayTime(CRGB x = CRGB(0, 0, 0))
@@ -2373,13 +2381,13 @@ void displayTime(CRGB x = CRGB(0, 0, 0))
     if (x.r == 0 && x.g == 0 && x.b == 0)
     {
         hsv2rgb_rainbow(CHSV(gHue, 255, 255), c);
-        DrawTime(c.r, c.g, c.b);
-        DrawDots(c.r, c.g, c.b);
+        DrawTime(c.r, c.g, c.b, 0);
+        DrawDots(c.r, c.g, c.b, 0);
     }
     else
     {
-        DrawTime(x.r, x.g, x.b);
-        DrawDots(x.r, x.g, x.b);
+        DrawTime(x.r, x.g, x.b, 0);
+        DrawDots(x.r, x.g, x.b, 0);
     }
 }
 
@@ -2415,6 +2423,24 @@ void displayTimeRainbow()
     }
 }
 
+void displayTimeColorful()
+{
+    bool fresh_update = false;
+    if (shouldUpdateNTP)
+    {
+        fresh_update = GetTime();
+    }
+    if (fresh_update || shouldUpdateTime())
+    {
+        if (incrementTime() || fresh_update)
+        {
+            CRGB x = CRGB(255, 0, 0);
+            DrawTime(x.r, x.g, x.b, 1);
+            DrawDots(x.r, x.g, x.b, 1);
+        }
+    }
+}
+
 bool incrementTime()
 {
     bool retval = false;
@@ -2438,25 +2464,37 @@ bool incrementTime()
 }
 
 
-void DrawTime(int r, int g, int b)
+void DrawTime(int r, int g, int b, int hueMode)
 {
 #define LEDS_PER_SEGMENT (Digit2 / 7)
     for (int l = 0; l < LEDS_PER_SEGMENT; l++)
     {
-        if (hours < 10) DrawDigit(Digit1 + l, LEDS_PER_SEGMENT, r, g, b, -1);        // Turn off leading zero
-        else DrawDigit(Digit1 + l, LEDS_PER_SEGMENT, r, g, b, hours / 10); //Draw the first digit of the hour
-        DrawDigit(Digit2 + l, LEDS_PER_SEGMENT, r, g, b, hours - ((hours / 10) * 10)); //Draw the second digit of the hour
+        if (hours < 10) DrawDigit(Digit1 + l, LEDS_PER_SEGMENT, r, g, b, -1, hueMode);        // Turn off leading zero
+        else DrawDigit(Digit1 + l, LEDS_PER_SEGMENT, r, g, b, hours / 10, hueMode); //Draw the first digit of the hour
+        DrawDigit(Digit2 + l, LEDS_PER_SEGMENT, r, g, b, hours - ((hours / 10) * 10), hueMode); //Draw the second digit of the hour
 
-        DrawDigit(Digit3 + l, LEDS_PER_SEGMENT, r, g, b, mins / 10); //Draw the first digit of the minute
-        DrawDigit(Digit4 + l, LEDS_PER_SEGMENT, r, g, b, mins - ((mins / 10) * 10)); //Draw the second digit of the minute
+        DrawDigit(Digit3 + l, LEDS_PER_SEGMENT, r, g, b, mins / 10, hueMode); //Draw the first digit of the minute
+        DrawDigit(Digit4 + l, LEDS_PER_SEGMENT, r, g, b, mins - ((mins / 10) * 10), hueMode); //Draw the second digit of the minute
     }
 }
 
-void dDHelper(int seg, int segmentLedCount, CRGB rgb = CRGB(0, 0, 0))
+void dDHelper(int offset, int seg, int segmentLedCount, int hueMode, CRGB rgb = CRGB(0, 0, 0) )
 {
-    for (int i = 0; i < segmentLedCount; i++)
-    {
-        leds[seg + i + seg * (segmentLedCount - 1)] = rgb;
+    if (hueMode == 1) {
+        for (int i = 0; i < segmentLedCount; i++)
+        {
+            int pos = offset + seg + i + seg * (segmentLedCount - 1);
+            int hue = map(pos, 0, NUM_LEDS, 0, 255) + gHue;
+            if (hue >= 255) hue -= 255;
+            CHSV col = CHSV(hue, 255, 255);
+            leds[pos] = col;
+        }
+    }
+    else {
+        for (int i = 0; i < segmentLedCount; i++)
+        {
+            leds[offset + seg + i + seg * (segmentLedCount - 1)] = rgb;
+        }
     }
 }
 
@@ -2471,65 +2509,67 @@ void dDHelper(int seg, int segmentLedCount, CRGB rgb = CRGB(0, 0, 0))
  * - b: blue component (0-255)
  * - n: value to be drawn (0-9)
  */
-void DrawDigit(int offset, int segmentLedCount, int r, int g, int b, int n)
+void DrawDigit(int offset, int segmentLedCount, int r, int g, int b, int n, int hueMode)
 {
+    Serial.print("Digit: ");
+    Serial.println(segmentLedCount);
     int s = segmentLedCount;
     CRGB rgb = CRGB(r, g, b);
     if (n == 2 || n == 3 || n == 4 || n == 5 || n == 6 || n == 8 || n == 9) //MIDDLE
     {
-        dDHelper(0, s, rgb);
+        dDHelper(offset, 0, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(0, s);
+        dDHelper(offset, 0, s, 0);
     }
     if (n == 0 || n == 1 || n == 2 || n == 3 || n == 4 || n == 7 || n == 8 || n == 9) //TOP RIGHT
     {
-        dDHelper(1, s, rgb);
+        dDHelper(offset, 1, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(1, s);
+        dDHelper(offset, 1, s, 0);
     }
     if (n == 0 || n == 2 || n == 3 || n == 5 || n == 6 || n == 7 || n == 8 || n == 9) //TOP
     {
-        dDHelper(2, s, rgb);
+        dDHelper(offset, 2, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(2, s);
+        dDHelper(offset, 2, s, 0);
     }
     if (n == 0 || n == 4 || n == 5 || n == 6 || n == 8 || n == 9) //TOP LEFT
     {
-        dDHelper(3, s, rgb);
+        dDHelper(offset, 3, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(3, s);
+        dDHelper(offset, 3, s, 0);
     }
     if (n == 0 || n == 2 || n == 6 || n == 8) //BOTTOM LEFT
     {
-        dDHelper(4, s, rgb);
+        dDHelper(offset, 4, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(4, s);
+        dDHelper(offset, 4, s, 0);
     }
     if (n == 0 || n == 2 || n == 3 || n == 5 || n == 6 || n == 8 || n == 9) //BOTTOM
     {
-        dDHelper(5, s, rgb);
+        dDHelper(offset, 5, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(5, s);
+        dDHelper(offset, 5, s, 0);
     }
     if (n == 0 || n == 1 || n == 3 || n == 4 || n == 5 || n == 6 || n == 7 || n == 8 || n == 9) //BOTTOM RIGHT
     {
-        dDHelper(6, s, rgb);
+        dDHelper(offset, 6, s, hueMode, rgb);
     }
     else
     {
-        dDHelper(6, s);
+        dDHelper(offset, 6, s, 0);
     }
 }
 #endif
