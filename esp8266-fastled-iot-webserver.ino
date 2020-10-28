@@ -452,6 +452,8 @@ uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 
 CRGB solidColor = CRGB::Blue;
 
+bool switchedTimePattern = false;
+
 // scale the brightness of all pixels down
 void dimAll(byte value)
 {
@@ -479,6 +481,8 @@ PatternAndNameList patterns = {
   #if DEVICE_TYPE == 2                
     { displayTimeStatic,      "Time" },
     { displayTimeColorful,     "Time Colorful" },
+    { displayTimeGradient,     "Time Gradient" },
+    { displayTimeGradientLarge,     "Time Gradient large" },
     { displayTimeRainbow,     "Time Rainbow" },
   #endif
 
@@ -1009,6 +1013,7 @@ void setup() {
 
     webServer.on("/pattern", HTTP_POST, []() {
         String value = webServer.arg("value");
+        switchedTimePattern = true;
         setPattern(value.toInt());
         sendInt(currentPatternIndex);
         });
@@ -2339,11 +2344,13 @@ bool GetTime()
         mins = (epoch % 3600) / 60;
         secs = (epoch % 60);
 
+        Serial.println("Requesting time");
+
         if (hours < 10)Serial.print("0");
         Serial.print(hours);
         Serial.print(':');
         if (mins < 10)Serial.print("0");
-        Serial.println(mins);
+        Serial.print(mins);
         Serial.print(':');
         if (secs < 10)Serial.print("0");
         Serial.println(secs);
@@ -2353,7 +2360,11 @@ bool GetTime()
 
 bool shouldUpdateNTP()
 {
-    if ((millis() - ntp_timestamp) > (NTP_REFRESH_INTERVAL_SECONDS * 1000) || (millis() - update_timestamp) >= 2000)return true;
+    if (switchedTimePattern || (millis() - ntp_timestamp) > (NTP_REFRESH_INTERVAL_SECONDS * 1000)) {
+        Serial.println(millis() - ntp_timestamp);
+        switchedTimePattern = true;
+        return true;
+    }
     return false;
 }
 
@@ -2366,10 +2377,10 @@ bool shouldUpdateTime()
 void DrawDots(int r, int g, int b, int hueMode)
 {
     for (int i = 2 * Digit2; i < Digit3; i++) {
-        if (hueMode == 1) {
-            int hue = map(i, 0, NUM_LEDS, 0, 255) + gHue;
+        if (hueMode != 0) {
+            int hue = map(i, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + gHue;
             if (hue >= 255) hue -= 255;
-            leds[i] = CHSV(map(hue, 0, NUM_LEDS, 0,255), 255,255);
+            leds[i] = CHSV(hue, 255,255);
         }
         else leds[i] = CRGB(r, g, b);
     }
@@ -2394,7 +2405,7 @@ void displayTime(CRGB x = CRGB(0, 0, 0))
 void displayTimeStatic()
 {
     bool fresh_update = false;
-    if (shouldUpdateNTP)
+    if (shouldUpdateNTP())
     {
         fresh_update = GetTime();
     }
@@ -2410,7 +2421,7 @@ void displayTimeStatic()
 void displayTimeRainbow()
 {
     bool fresh_update = false;
-    if (shouldUpdateNTP)
+    if (shouldUpdateNTP())
     {
         fresh_update = GetTime();
     }
@@ -2426,7 +2437,7 @@ void displayTimeRainbow()
 void displayTimeColorful()
 {
     bool fresh_update = false;
-    if (shouldUpdateNTP)
+    if (shouldUpdateNTP())
     {
         fresh_update = GetTime();
     }
@@ -2437,6 +2448,42 @@ void displayTimeColorful()
             CRGB x = CRGB(255, 0, 0);
             DrawTime(x.r, x.g, x.b, 1);
             DrawDots(x.r, x.g, x.b, 1);
+        }
+    }
+}
+
+void displayTimeGradient()
+{
+    bool fresh_update = false;
+    if (shouldUpdateNTP())
+    {
+        fresh_update = GetTime();
+    }
+    if (fresh_update || shouldUpdateTime())
+    {
+        if (incrementTime() || fresh_update)
+        {
+            CRGB x = CRGB(255, 0, 0);
+            DrawTime(x.r, x.g, x.b, 5);
+            DrawDots(x.r, x.g, x.b, 5);
+        }
+    }
+}
+
+void displayTimeGradientLarge()
+{
+    bool fresh_update = false;
+    if (shouldUpdateNTP())
+    {
+        fresh_update = GetTime();
+    }
+    if (fresh_update || shouldUpdateTime())
+    {
+        if (incrementTime() || fresh_update)
+        {
+            CRGB x = CRGB(255, 0, 0);
+            DrawTime(x.r, x.g, x.b, 3);
+            DrawDots(x.r, x.g, x.b, 3);
         }
     }
 }
@@ -2480,11 +2527,11 @@ void DrawTime(int r, int g, int b, int hueMode)
 
 void dDHelper(int offset, int seg, int segmentLedCount, int hueMode, CRGB rgb = CRGB(0, 0, 0) )
 {
-    if (hueMode == 1) {
+    if (hueMode != 0) {
         for (int i = 0; i < segmentLedCount; i++)
         {
             int pos = offset + seg + i + seg * (segmentLedCount - 1);
-            int hue = map(pos, 0, NUM_LEDS, 0, 255) + gHue;
+            int hue = map(pos, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + gHue;
             if (hue >= 255) hue -= 255;
             CHSV col = CHSV(hue, 255, 255);
             leds[pos] = col;
@@ -2511,8 +2558,6 @@ void dDHelper(int offset, int seg, int segmentLedCount, int hueMode, CRGB rgb = 
  */
 void DrawDigit(int offset, int segmentLedCount, int r, int g, int b, int n, int hueMode)
 {
-    Serial.print("Digit: ");
-    Serial.println(segmentLedCount);
     int s = segmentLedCount;
     CRGB rgb = CRGB(r, g, b);
     if (n == 2 || n == 3 || n == 4 || n == 5 || n == 6 || n == 8 || n == 9) //MIDDLE
