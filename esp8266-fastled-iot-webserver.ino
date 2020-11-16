@@ -452,6 +452,7 @@ uint8_t currentPaletteIndex = 0;
 
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 uint8_t slowHue = 0; // slower gHue
+uint8_t verySlowHue = 0; // very slow gHue
 
 CRGB solidColor = CRGB::Blue;
 
@@ -1258,6 +1259,7 @@ void loop() {
         nblendPaletteTowardPalette(gCurrentPalette, gTargetPalette, 8);
         gHue++;  // slowly cycle the "base color" through the rainbow
         if (gHue % 16 == 0)slowHue++;
+        if (gHue % 127 == 0)verySlowHue++;
     }
 
     if (autoplay && (millis() > autoPlayTimeout)) {
@@ -2382,7 +2384,7 @@ bool shouldUpdateNTP()
 
 bool shouldUpdateTime()
 {
-    if ((millis() - update_timestamp) > (1000-last_diff))return true;
+    if ((millis() - update_timestamp) > (1000))return true;
     return false;
 }
 
@@ -2390,7 +2392,7 @@ void DrawDots(int r, int g, int b, int hueMode)
 {
     for (int i = 2 * Digit2; i < Digit3; i++) {
         if (hueMode != 0) {
-            int hue = map(i, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + slowHue;
+            int hue = map(i, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + verySlowHue;
             if (hue >= 255) hue -= 255;
             leds[i] = CHSV(hue, 255,255);
         }
@@ -2559,7 +2561,7 @@ void dDHelper(int offset, int seg, int segmentLedCount, int hueMode, CRGB rgb = 
         for (int i = 0; i < segmentLedCount; i++)
         {
             int pos = offset + seg + i + seg * (segmentLedCount - 1);
-            int hue = map(pos, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + slowHue;
+            int hue = map(pos, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + verySlowHue;
             if (hue >= 255) hue -= 255;
             CHSV col = CHSV(hue, 255, 255);
             leds[pos] = col;
