@@ -111,8 +111,10 @@ extern "C" {
 #elif DEVICE_TYPE == 2              // 7-Segment Clock
     #define NTP_REFRESH_INTERVAL_SECONDS 600            // 10 minutes
     const char* ntpServerName = "at.pool.ntp.org";      // Austrian ntp-timeserver
-    int t_offset = 0;                                   // offset added to the time from the ntp server
+    int t_offset = 1;                                   // offset added to the time from the ntp server
+    bool updateColorsEverySecond = false;               // if set to false it will update colors every minute (time patterns only)
     const int NTP_PACKET_SIZE = 48;
+    bool switchedTimePattern = true;
     #define NUM_LEDS 30
     #define Digit1 0
     #define Digit2 7
@@ -142,7 +144,7 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
     //#define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
-    #define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+    //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
     #define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
@@ -449,10 +451,9 @@ unsigned long autoPlayTimeout = 0;
 uint8_t currentPaletteIndex = 0;
 
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+uint8_t slowHue = 0; // slower gHue
 
 CRGB solidColor = CRGB::Blue;
-
-bool switchedTimePattern = false;
 
 // scale the brightness of all pixels down
 void dimAll(byte value)
@@ -1086,6 +1087,13 @@ void setup() {
 
     Serial.println("HTTP web server started");
 
+#if DEVICE_TYPE == 2
+    bool sucess = false;
+    while (!sucess) {
+        sucess = GetTime();
+        if (!sucess) delay(300);
+    }
+#endif
     //  webSocketsServer.begin();
     //  webSocketsServer.onEvent(webSocketEvent);
     //  Serial.println("Web socket server started");
@@ -1249,6 +1257,7 @@ void loop() {
         // slowly blend the current palette to the next
         nblendPaletteTowardPalette(gCurrentPalette, gTargetPalette, 8);
         gHue++;  // slowly cycle the "base color" through the rainbow
+        if (gHue % 16 == 0)slowHue++;
     }
 
     if (autoplay && (millis() > autoPlayTimeout)) {
@@ -2312,6 +2321,17 @@ unsigned long sendNTPpacket(IPAddress& address)
     udpTime.endPacket();
 }
 
+void PrintTime() {
+    if (hours < 10)Serial.print("0");
+    Serial.print(hours);
+    Serial.print(':');
+    if (mins < 10)Serial.print("0");
+    Serial.print(mins);
+    Serial.print(':');
+    if (secs < 10)Serial.print("0");
+    Serial.println(secs);
+}
+
 
 bool GetTime()
 {
@@ -2346,14 +2366,7 @@ bool GetTime()
 
         Serial.println("Requesting time");
 
-        if (hours < 10)Serial.print("0");
-        Serial.print(hours);
-        Serial.print(':');
-        if (mins < 10)Serial.print("0");
-        Serial.print(mins);
-        Serial.print(':');
-        if (secs < 10)Serial.print("0");
-        Serial.println(secs);
+        PrintTime();
         return true;
     }
 }
@@ -2361,8 +2374,7 @@ bool GetTime()
 bool shouldUpdateNTP()
 {
     if (switchedTimePattern || (millis() - ntp_timestamp) > (NTP_REFRESH_INTERVAL_SECONDS * 1000)) {
-        Serial.println(millis() - ntp_timestamp);
-        switchedTimePattern = true;
+        switchedTimePattern = false;
         return true;
     }
     return false;
@@ -2378,7 +2390,7 @@ void DrawDots(int r, int g, int b, int hueMode)
 {
     for (int i = 2 * Digit2; i < Digit3; i++) {
         if (hueMode != 0) {
-            int hue = map(i, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + gHue;
+            int hue = map(i, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + slowHue;
             if (hue >= 255) hue -= 255;
             leds[i] = CHSV(hue, 255,255);
         }
@@ -2427,7 +2439,7 @@ void displayTimeRainbow()
     }
     if (fresh_update || shouldUpdateTime())
     {
-        if (incrementTime() || fresh_update)
+        if (incrementTime()  || fresh_update)
         {
             displayTime();
         }
@@ -2450,6 +2462,11 @@ void displayTimeColorful()
             DrawDots(x.r, x.g, x.b, 1);
         }
     }
+    else if (updateColorsEverySecond) {
+        CRGB x = CRGB(255, 0, 0);
+        DrawTime(x.r, x.g, x.b, 1);
+        DrawDots(x.r, x.g, x.b, 1);
+    }
 }
 
 void displayTimeGradient()
@@ -2467,6 +2484,11 @@ void displayTimeGradient()
             DrawTime(x.r, x.g, x.b, 5);
             DrawDots(x.r, x.g, x.b, 5);
         }
+    }
+    else if(updateColorsEverySecond){
+        CRGB x = CRGB(255, 0, 0);
+        DrawTime(x.r, x.g, x.b, 5);
+        DrawDots(x.r, x.g, x.b, 5);
     }
 }
 
@@ -2486,27 +2508,33 @@ void displayTimeGradientLarge()
             DrawDots(x.r, x.g, x.b, 3);
         }
     }
+    else if (updateColorsEverySecond) {
+        CRGB x = CRGB(255, 0, 0);
+        DrawTime(x.r, x.g, x.b, 3);
+        DrawDots(x.r, x.g, x.b, 3);
+    }
 }
 
 bool incrementTime()
 {
     bool retval = false;
     secs++;
-    last_diff = millis() - update_timestamp - 1000;
     update_timestamp = millis();
     if (secs >= 60)
     {
-        secs = 0;
+        secs -= 60;
         mins++;
         retval = true;
     }
     if (mins >= 60)
     {
-        mins = 0;
+        mins -= 60;
         hours++;
         retval = true;
     }
-    if (hours >= 24) hours = 0;
+    if (hours >= 24) hours -= 24;
+    PrintTime();
+    last_diff = millis() - update_timestamp - 1000;
     return retval;
 }
 
@@ -2531,7 +2559,7 @@ void dDHelper(int offset, int seg, int segmentLedCount, int hueMode, CRGB rgb = 
         for (int i = 0; i < segmentLedCount; i++)
         {
             int pos = offset + seg + i + seg * (segmentLedCount - 1);
-            int hue = map(pos, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + gHue;
+            int hue = map(pos, 0, NUM_LEDS, 0, (int)((double)255 / (double)hueMode)) + slowHue;
             if (hue >= 255) hue -= 255;
             CHSV col = CHSV(hue, 255, 255);
             leds[pos] = col;
