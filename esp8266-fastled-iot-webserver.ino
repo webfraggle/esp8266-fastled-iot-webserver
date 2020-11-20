@@ -1015,7 +1015,9 @@ void setup() {
 
     webServer.on("/pattern", HTTP_POST, []() {
         String value = webServer.arg("value");
+        #if DEVICE_TYPE == 2
         switchedTimePattern = true;
+        #endif
         setPattern(value.toInt());
         sendInt(currentPatternIndex);
         });
