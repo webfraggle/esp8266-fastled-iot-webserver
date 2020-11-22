@@ -516,7 +516,7 @@ PatternAndNameList patterns = {
     { rainbowBeat,              "Rainbow Beat" },
     { randomPaletteFades,              "Palette Fades" },
     { rainbowChase,              "Rainbow Chase" },
-    //{ randomDots,              "Rainbow Dots" },  // disabled see issue 68#
+    { randomDots,              "Rainbow Dots" },
     { randomFades,              "Rainbow Fades" },
     { policeLights,              "Police Lights" },
     { glitter,              "Glitter" },
@@ -1983,12 +1983,12 @@ void rainbowChase()
 void randomDots() // Similar to randomFades(), colors flash on/off quickly
 {
     uint16_t pos;
-    do
+    pos = random16(0, (NUM_LEDS - 1));
+    if (CRGB(0, 0, 0) == CRGB(leds[pos]))
     {
-        pos = random16(0, (NUM_LEDS - 1));
-    } while (CRGB(0, 0, 0) != CRGB(leds[pos]));
+        leds[pos] = CHSV((random8() % 256), 200, 255);
+    }
     fadeToBlackBy(leds, NUM_LEDS, 64);
-    leds[pos] = CHSV((random8() % 256), 200, 255);
 }
 
 // Same as randomPaletteFades() but with completely random colors
