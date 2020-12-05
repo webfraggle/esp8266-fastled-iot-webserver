@@ -159,6 +159,8 @@ extern "C" {
     //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
+#define WIFI_MANAGER    // enables '/wifi.html' page to connect to a different network
+
 //---------------------------------------------------------------------------------------------------------//
 
 
@@ -353,6 +355,11 @@ if you have connected the ring first it should look like this: const int twpOffs
     #else
         #define PACKET_LENGTH NUM_LEDS
     #endif
+#endif
+
+#ifdef WIFI_MANAGER
+    #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
+    WiFiManager wifiManager;
 #endif
 
 // Misc Params
@@ -772,6 +779,33 @@ void setup() {
 
     initUdp(UDP_PORT);
 
+#ifdef WIFI_MANAGER 
+    String nameString;
+    uint8_t mac[WL_MAC_ADDR_LENGTH];
+    WiFi.softAPmacAddress(mac);
+    String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
+        String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
+    macID.toUpperCase();
+
+    nameString = "ESP8266-" + macID;
+
+    char nameChar[nameString.length() + 1];
+    memset(nameChar, 0, nameString.length() + 1);
+
+    for (int i = 0; i < nameString.length(); i++)
+        nameChar[i] = nameString.charAt(i);
+
+    Serial.printf("Name: %s\n", nameChar);
+
+    wifiManager.setConfigPortalBlocking(false);
+    if (wifiManager.autoConnect(nameChar)) {
+        Serial.println("Wi-Fi connected");
+    }
+    else {
+        Serial.println("Wi-Fi manager portal running");
+    }
+#endif
+
 #ifdef ENABLE_OTA_SUPPORT
 
 
@@ -1121,6 +1155,9 @@ void loop() {
 
     //  dnsServer.processNextRequest();
     //  webSocketsServer.loop();
+#ifdef WIFI_MANAGER
+    wifiManager.process();
+#endif
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else
