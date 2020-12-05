@@ -142,7 +142,7 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Feature Configuration: Enabled by removing the "//" in front of the define statements
 //---------------------------------------------------------------------------------------------------------//
-    //#define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
+    #define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
     //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
@@ -785,7 +785,7 @@ void setup() {
 
     initUdp(UDP_PORT);
 
-#ifdef WIFI_MANAGER 
+#ifndef ACCESS_POINT_MODE
     String nameString;
     uint8_t mac[WL_MAC_ADDR_LENGTH];
     WiFi.softAPmacAddress(mac);
@@ -795,16 +795,18 @@ void setup() {
 
     nameString = "ESP8266-" + macID;
 
-    char nameChar[nameString.length() + 1];
-    memset(nameChar, 0, nameString.length() + 1);
+    char AP_NameChar[nameString.length() + 1];
+    memset(AP_NameChar, 0, nameString.length() + 1);
 
     for (int i = 0; i < nameString.length(); i++)
-        nameChar[i] = nameString.charAt(i);
+        AP_NameChar[i] = nameString.charAt(i);
 
-    Serial.printf("Name: %s\n", nameChar);
+    Serial.printf("Name: %s\n", AP_NameChar);
+#endif
 
+#ifdef WIFI_MANAGER 
     wifiManager.setConfigPortalBlocking(false);
-    if (wifiManager.autoConnect(nameChar)) {
+    if (wifiManager.autoConnect(AP_NameChar)) {
         Serial.println("Wi-Fi connected");
     }
     else {
