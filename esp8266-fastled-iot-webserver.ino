@@ -161,8 +161,6 @@ extern "C" {
     //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
-#define WIFI_MANAGER    // enables '/wifi.html' page to connect to a different network
-
 //---------------------------------------------------------------------------------------------------------//
 
 
@@ -359,10 +357,8 @@ if you have connected the ring first it should look like this: const int twpOffs
     #endif
 #endif
 
-#ifdef WIFI_MANAGER
     #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
     WiFiManager wifiManager;
-#endif
 
 // Misc Params
 #define AVG_ARRAY_SIZE 10
@@ -757,62 +753,35 @@ void setup() {
         Serial.printf("\n");
     }
 
-#ifdef ACCESS_POINT_MODE
-    WiFi.mode(WIFI_AP);
-    // Do a little work to get a unique-ish name. Append the
-    // last two bytes of the MAC (HEX'd) to "Thing-":
-    uint8_t mac[WL_MAC_ADDR_LENGTH];
-    WiFi.softAPmacAddress(mac);
-    String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
-        String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
-    macID.toUpperCase();
-    String AP_NameString = "ESP8266 Thing " + macID;
-    char AP_NameChar[AP_NameString.length() + 1];
-    memset(AP_NameChar, 0, AP_NameString.length() + 1);
-    for (int i = 0; i < AP_NameString.length(); i++)
-        AP_NameChar[i] = AP_NameString.charAt(i);
-    WiFi.softAP(AP_NameChar, WiFiAPPSK);
-    Serial.printf("Connect to Wi-Fi access point: %s\n", AP_NameChar);
-    Serial.println("and open http://192.168.4.1 in your browser");
-#else
-    WiFi.mode(WIFI_STA);
-    Serial.printf("Connecting to %s\n", ssid);
-    if (String(WiFi.SSID()) != String(ssid)) {
-        WiFi.hostname(HOSTNAME);
-        WiFi.begin(ssid, password);        
-    }
-#endif
-
-    initUdp(UDP_PORT);
-
-#ifndef ACCESS_POINT_MODE
-    String nameString;
     uint8_t mac[WL_MAC_ADDR_LENGTH];
     WiFi.softAPmacAddress(mac);
     String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
         String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
     macID.toUpperCase();
 
-    nameString = "ESP8266-" + macID;
+    String nameString = ((String)HOSTNAME + ' - ' + macID);
 
-    char AP_NameChar[nameString.length() + 1];
-    memset(AP_NameChar, 0, nameString.length() + 1);
+    char nameChar[nameString.length() + 1];
+    memset(nameChar, 0, nameString.length() + 1);
 
     for (int i = 0; i < nameString.length(); i++)
-        AP_NameChar[i] = nameString.charAt(i);
+        nameChar[i] = nameString.charAt(i);
 
-    Serial.printf("Name: %s\n", AP_NameChar);
-#endif
+    Serial.printf("Name: %s\n", nameChar);
 
-#ifdef WIFI_MANAGER 
+    //reset settings - wipe credentials for testing
+    // wifiManager.resetSettings();
+
     wifiManager.setConfigPortalBlocking(false);
-    if (wifiManager.autoConnect(AP_NameChar)) {
+
+    //automatically connect using saved credentials if they exist
+    //If connection fails it starts an access point with the specified name
+    if (wifiManager.autoConnect(nameChar)) {
         Serial.println("Wi-Fi connected");
     }
     else {
         Serial.println("Wi-Fi manager portal running");
     }
-#endif
 
 #ifdef ENABLE_OTA_SUPPORT
 
@@ -1173,9 +1142,7 @@ void loop() {
 
     //  dnsServer.processNextRequest();
     //  webSocketsServer.loop();
-#ifdef WIFI_MANAGER
     wifiManager.process();
-#endif
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else
