@@ -142,7 +142,7 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Feature Configuration: Enabled by removing the "//" in front of the define statements
 //---------------------------------------------------------------------------------------------------------//
-    //#define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
+    #define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
 
     //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
@@ -356,6 +356,9 @@ if you have connected the ring first it should look like this: const int twpOffs
         #define PACKET_LENGTH NUM_LEDS
     #endif
 #endif
+
+    #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
+    WiFiManager wifiManager;
 
 // Misc Params
 #define AVG_ARRAY_SIZE 10
@@ -750,33 +753,35 @@ void setup() {
         Serial.printf("\n");
     }
 
-#ifdef ACCESS_POINT_MODE
-    WiFi.mode(WIFI_AP);
-    // Do a little work to get a unique-ish name. Append the
-    // last two bytes of the MAC (HEX'd) to "Thing-":
     uint8_t mac[WL_MAC_ADDR_LENGTH];
     WiFi.softAPmacAddress(mac);
     String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
         String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
     macID.toUpperCase();
-    String AP_NameString = "ESP8266 Thing " + macID;
-    char AP_NameChar[AP_NameString.length() + 1];
-    memset(AP_NameChar, 0, AP_NameString.length() + 1);
-    for (int i = 0; i < AP_NameString.length(); i++)
-        AP_NameChar[i] = AP_NameString.charAt(i);
-    WiFi.softAP(AP_NameChar, WiFiAPPSK);
-    Serial.printf("Connect to Wi-Fi access point: %s\n", AP_NameChar);
-    Serial.println("and open http://192.168.4.1 in your browser");
-#else
-    WiFi.mode(WIFI_STA);
-    Serial.printf("Connecting to %s\n", ssid);
-    if (String(WiFi.SSID()) != String(ssid)) {
-        WiFi.hostname(HOSTNAME);
-        WiFi.begin(ssid, password);        
-    }
-#endif
 
-    initUdp(UDP_PORT);
+    String nameString = ((String)HOSTNAME + ' - ' + macID);
+
+    char nameChar[nameString.length() + 1];
+    memset(nameChar, 0, nameString.length() + 1);
+
+    for (int i = 0; i < nameString.length(); i++)
+        nameChar[i] = nameString.charAt(i);
+
+    Serial.printf("Name: %s\n", nameChar);
+
+    //reset settings - wipe credentials for testing
+    // wifiManager.resetSettings();
+
+    wifiManager.setConfigPortalBlocking(false);
+
+    //automatically connect using saved credentials if they exist
+    //If connection fails it starts an access point with the specified name
+    if (wifiManager.autoConnect(nameChar)) {
+        Serial.println("Wi-Fi connected");
+    }
+    else {
+        Serial.println("Wi-Fi manager portal running");
+    }
 
 #ifdef ENABLE_OTA_SUPPORT
 
@@ -1137,6 +1142,7 @@ void loop() {
 
     //  dnsServer.processNextRequest();
     //  webSocketsServer.loop();
+    wifiManager.process();
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else
