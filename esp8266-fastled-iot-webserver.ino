@@ -142,8 +142,6 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Feature Configuration: Enabled by removing the "//" in front of the define statements
 //---------------------------------------------------------------------------------------------------------//
-    #define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
-
     //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
@@ -378,19 +376,12 @@ ESP8266WebServer webServer(80);
 #define FRAMES_PER_SECOND  120  // here you can control the speed. With the Access Point / Web Server the animations run a bit slower.
 #define SOUND_REACTIVE_FPS FRAMES_PER_SECOND
 
-
+#ifdef ENABLE_MQTT_SUPPORT
 #include "Secrets.h" // this file is intentionally not included in the sketch, so nobody accidentally commits their secret information.
-// create a Secrets.h file with the following:
-// AP mode password
-// const char WiFiAPPSK[] = "your-password";
-
-// Wi-Fi network to connect to (if not in AP mode)
-// char* ssid = "your-ssid";
-// char* password = "your-password";
-
 // MQTT user and password for your broker (if MQTT is enabled)
 // const char* mqttUser = "your-mqtt-user";
 // const char* mqttPassword = "your-mqtt-password";
+#endif
 
 #ifdef ENABLE_OTA_SUPPORT
 #include <ArduinoOTA.h>
