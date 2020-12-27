@@ -1608,7 +1608,7 @@ void sinelon()
 {
     // a colored dot sweeping back and forth, with fading trails
     fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(speed, 0, NUM_LEDS);
+    int pos = beatsin16(speed / 4, 0, NUM_LEDS);
     static int prevpos = 0;
     CRGB color = ColorFromPalette(palettes[currentPaletteIndex], gHue, 255);
     if (pos < prevpos) {
@@ -2033,6 +2033,7 @@ void glitter()
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
+    FastLED.delay(255 - speed);
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
