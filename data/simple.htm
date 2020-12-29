@@ -1,24 +1,63 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ESP8266 + FastLED by Evil Genius Labs</title>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LED-Lighting (Simple)</title>
 
-  <!-- request CSS from internet CDN -->
-  <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> -->
+    <!-- request CSS from the ESP8266 web server -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/minicolors.min.css">
 
-  <!-- request CSS from the ESP8266 web server -->
-  <link rel="stylesheet" href="css/bootstrap.min.css">
-
-  <link rel="stylesheet" href="css/simple.css">
-
-  <link rel="icon" href="images/atom196.png">
-</head>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="icon" href="images/atom196.png">
+  </head>
 
 <body>
+
+  <nav class="navbar navbar-default navbar-static-top bg-light" id="top" role="banner">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="https://www.evilgeniuslabs.org" target="_blank"><img src="images/atom196.png" style="width: 24px; height: 24px;" /></a>
+        <a class="navbar-brand" href="https://www.evilgeniuslabs.org" target="_blank">Evil Genius Labs</a>
+        <div class="navbar-brand">&</div>
+		    <a class="navbar-brand" href="https://www.thingiverse.com/Surrbradl08/designs" target="_blank"><img src="images/surr.png" style="width: 24px; height: 24px;" /></a>
+        <a class="navbar-brand" href="https://www.thingiverse.com/Surrbradl08/designs" target="_blank">Surrbradl08</a>
+      </div>
+      <div class="collapse navbar-collapse" id="navbar-collapse-1">
+          <ul class="nav navbar-nav">
+              <li><a href="/" title="Home">Home</a></li>
+              <li class="active bg-light"><a href="/simple.htm" title="Simple Page" class="bg-light">Simple <span class="sr-only bg-light">(current)</span></a></li>
+              <li><a href="/settings.htm" title="Settings">Settings</a></li>
+              <li>
+                  <a>
+                      <div class="custom-control custom-switch">
+                          <input type="checkbox" class="custom-control-input" id="darkSwitch" />
+                          <label class="custom-control-label" for="darkSwitch">Dark Mode</label>
+                      </div>
+                      <script src="js/dark-mode-switch.min.js"></script>
+                  </a>
+              </li>
+          </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li>
+            <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver">
+              <img style="height: 16px;" src="images/github.ico" />
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
   <div id="container" class="container">
 
@@ -40,12 +79,6 @@
     <button id="patternButtonTemplate" class="grid-item-pattern btn btn-default"></button>
 
   </div>
-
-  <!-- request js from internet CDN -->
-  <!-- <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script> -->
-  <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> -->
-  <!-- <script src="https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js"></script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha256-A4JwlcDvqO4JXpvEtvWY1RH8JAEMu5W21wP8GUXLUNs=" crossorigin="anonymous"></script> -->
 
   <!-- request js from the ESP8266 web server -->
   <script src="js/jquery-3.1.1.min.js"></script>
