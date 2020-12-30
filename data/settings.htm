@@ -160,7 +160,7 @@
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
           <button type="submit" class="btn btn-default">Update</button>
-          <a role="button" href='/reset' class="pull-right btn btn-danger" style="margin-left: 10px;" title="Reset">RESET</a>
+          <a role="button" data-toggle="modal" data-target="#reset_modal" data-action="add" class="pull-right btn btn-danger" style="margin-left: 10px;" title="Reset">RESET</a>
           <a role="button" href='/reboot' class="pull-right btn btn-info" style="margin-left: 10px;" title="Reboot">Reboot</a>
           <a id="alexaSupportEntry" role="button" href='/alexa' target="_blank" class="pull-right btn btn-success" style="margin-left: 10px;" title="Alexa">Alexa Pairing</a>
           <a id="otaSupportEntry" role="button" href="/ota" target="_blank" class="pull-right btn btn-success" title="OTA">OTA Update</a>
@@ -171,6 +171,30 @@
     </form>
 
   </div>
+
+  <div class="modal fade" id="reset_modal" tabindex="-1" role="dialog" aria-labelledby="Reset_Modal" aria-hidden="true">
+    <form action="/reset" method="post">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="edit_room_lable">Reset settings</h4>
+          </div>
+          <div class="modal-body">
+              <div class="form-group form-group-lg row">
+                <div class="col-sm-offset-3 col-sm-6">
+                  <a role="button" href='/reset?type=wifi' class="btn btn-warning btn-lg btn-block">Delete WIFI settings</a>
+                  <a role="button" href='/reset?type=all' class="btn btn-danger btn-lg btn-block">Delete ALL settings</a>
+                </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+      </form>
+    </div>
 
   <!-- request js from the ESP8266 web server -->
   <script src="js/jquery-3.1.1.min.js"></script>

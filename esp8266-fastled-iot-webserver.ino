@@ -708,7 +708,40 @@ void addRebootPage(int webServerNr)
     #endif // ENABLE_ALEXA_SUPPORT
 }
 
+// we can't assing wifiManager.resetSettings(); to reset, somewhow it gets called straight away.
+void setWiFiConf(String ssid, String password)
+{
+#ifdef ESP8266
+    struct station_config conf;
 
+    wifi_station_get_config(&conf);
+
+    memset(conf.ssid, 0, sizeof(conf.ssid));
+    for (int i = 0; i < ssid.length() && i < sizeof(conf.ssid); i++)
+        conf.ssid[i] = ssid.charAt(i);
+
+    memset(conf.password, 0, sizeof(conf.password));
+    for (int i = 0; i < password.length() && i < sizeof(conf.password); i++)
+        conf.password[i] = password.charAt(i);
+
+    wifi_station_set_config(&conf);
+
+// untested due to lack of ESP32
+#elif defined(ESP32)
+    if(WiFiGenericClass::getMode() != WIFI_MODE_NULL){
+
+          wifi_config_t conf;
+          esp_wifi_get_config(WIFI_IF_STA, &conf);
+
+          memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
+          ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
+          memset(conf.sta.password, 0, sizeof(conf.sta.password));
+          password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
+
+          esp_wifi_set_config(WIFI_IF_STA, &conf);
+    }
+#endif
+}
 void setup() {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     Serial.begin(115200);
@@ -779,10 +812,6 @@ void setup() {
     char nameChar[nameString.length() + 1];
     nameString.toCharArray(nameChar, sizeof(nameChar));
 
-    //reset settings - wipe credentials for testing
-    // wifiManager.resetSettings();
-
-    wifiManager.setConfigPortalBlocking(false);
     wifiManager.setHostname(cfg.hostname);
 
     //automatically connect using saved credentials if they exist
@@ -1018,36 +1047,7 @@ void setup() {
         String password = webServer.arg("password");
 
         if (ssid.length() != 0 && password.length() != 0) {
-#ifdef ESP8266
-            struct station_config conf;
-
-            wifi_station_get_config(&conf);
-
-            memset(conf.ssid, 0, sizeof(conf.ssid));
-            for (int i = 0; i < ssid.length() && i < sizeof(conf.ssid); i++)
-                conf.ssid[i] = ssid.charAt(i);
-
-            memset(conf.password, 0, sizeof(conf.password));
-            for (int i = 0; i < password.length() && i < sizeof(conf.password); i++)
-                conf.password[i] = password.charAt(i);
-
-            wifi_station_set_config(&conf);
-
-// untested due to lack of ESP32
-#elif defined(ESP32)
-            if(WiFiGenericClass::getMode() != WIFI_MODE_NULL){
-
-                  wifi_config_t conf;
-                  esp_wifi_get_config(WIFI_IF_STA, &conf);
-
-                  memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
-                  ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
-                  memset(conf.sta.password, 0, sizeof(conf.sta.password));
-                  password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
-
-                  esp_wifi_set_config(WIFI_IF_STA, &conf);
-            }
-#endif
+            setWiFiConf(ssid, password);
             force_restart = true;
         }
 
@@ -1102,6 +1102,29 @@ void setup() {
         } else {
           webServer.send(200, "text/html", "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/settings.htm\"/></head><body></body>");
         }
+        });
+
+    webServer.on("/reset", HTTP_GET, []() {
+
+        // delete EEPROM settings
+        if (webServer.arg("type") == String("all")) {
+            // delete EEPROM config
+            EEPROM.begin(4095);
+            for (int i = 0 ; i < sizeof(cfg) ; i++) {
+                EEPROM.write(i, 0);
+            }
+            delay(200);
+            EEPROM.commit();
+            EEPROM.end();
+        }
+
+        // delete wireless config
+        if (webServer.arg("type") == String("wifi") || webServer.arg("type") == String("all")) {
+            setWiFiConf(String(""), String(""));
+        }
+        webServer.send(200, "text/html", "<html><head></head><body><font face='arial'><b><h2>Config reset finished. Device is rebooting now and you need to connect to the wireless again.</h2></b></font></body></html>");
+        delay(500);
+        ESP.restart();
         });
 
     webServer.on("/fieldValue", HTTP_GET, []() {
@@ -1479,6 +1502,7 @@ void loadConfig()
         save_config = true;
     }
 
+#ifdef ENABLE_MQTT_SUPPORT
     // fall back to default settings if hostname is invalid
     if (!isValidHostname(cfg.MQTTHost, sizeof(cfg.MQTTHost))) {
         cfg.MQTTEnabled = MQTT_ENABLED;
@@ -1490,6 +1514,7 @@ void loadConfig()
         strncpy(cfg.MQTTDeviceName, MQTT_DEVICE_NAME, sizeof(cfg.MQTTDeviceName));
         save_config = true;
     }
+#endif
 }
 
 bool isValidHostname(char *hostname_to_check, long size)
