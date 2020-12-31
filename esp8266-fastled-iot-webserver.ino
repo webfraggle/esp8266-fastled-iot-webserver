@@ -397,8 +397,9 @@ typedef struct {
 } configData_t;
 
 configData_t cfg;
+configData_t default_cfg;
 
-// set to true if config has changedneeds to be w
+// set to true if config has changed
 bool save_config = false;
 
 ESP8266WebServer webServer(80);
@@ -429,7 +430,7 @@ CRGB leds[NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
 uint8_t brightnessMap[brightnessCount] = { 5, 32, 64, 128, 255 };
-uint8_t brightnessIndex = 0;
+uint8_t brightnessIndex = 3;
 
 // ten seconds per color palette makes a good demo
 // 20-120 is better for deployment
@@ -763,6 +764,15 @@ void setup() {
     FastLED.setMaxPowerInVoltsAndMilliamps(VOLTS, MILLI_AMPS);
     fill_solid(leds, NUM_LEDS, CRGB::Black);
     FastLED.show();
+
+    // set a default config to be used on config reset
+    default_cfg.brightness = brightness;
+    default_cfg.currentPatternIndex = currentPatternIndex;
+    default_cfg.power = power;
+    default_cfg.autoplay = autoplay;
+    default_cfg.autoplayDuration = autoplayDuration;
+    default_cfg.currentPaletteIndex = currentPaletteIndex;
+    default_cfg.speed = speed;
 
     loadConfig();
 
@@ -1106,6 +1116,10 @@ void setup() {
             delay(200);
             EEPROM.commit();
             EEPROM.end();
+
+            // set to default config
+            cfg = default_cfg;
+            saveConfig(true);
         }
 
         // delete wireless config
