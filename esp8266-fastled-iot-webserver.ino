@@ -142,8 +142,6 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Feature Configuration: Enabled by removing the "//" in front of the define statements
 //---------------------------------------------------------------------------------------------------------//
-    #define ACCESS_POINT_MODE                 // the esp8266 will create a wifi-access point instead of connecting to one, credentials must be in Secrets.h
-
     //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
@@ -1863,7 +1861,7 @@ void sinelon()
 {
     // a colored dot sweeping back and forth, with fading trails
     fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(speed, 0, NUM_LEDS);
+    int pos = beatsin16(speed / 4, 0, NUM_LEDS);
     static int prevpos = 0;
     CRGB color = ColorFromPalette(palettes[currentPaletteIndex], gHue, 255);
     if (pos < prevpos) {
@@ -2288,6 +2286,7 @@ void glitter()
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
+    FastLED.delay(255 - speed);
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
