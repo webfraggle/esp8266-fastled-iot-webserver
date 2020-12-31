@@ -1094,7 +1094,7 @@ void setup() {
         }
         });
 
-    webServer.on("/reset", HTTP_GET, []() {
+    webServer.on("/reset", HTTP_POST, []() {
 
         // delete EEPROM settings
         if (webServer.arg("type") == String("all")) {

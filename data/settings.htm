@@ -173,7 +173,6 @@
   </div>
 
   <div class="modal fade" id="reset_modal" tabindex="-1" role="dialog" aria-labelledby="Reset_Modal" aria-hidden="true">
-    <form action="/reset" method="post">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -183,8 +182,18 @@
           <div class="modal-body">
               <div class="form-group form-group-lg row">
                 <div class="col-sm-offset-3 col-sm-6">
-                  <a role="button" href='/reset?type=wifi' class="btn btn-warning btn-lg btn-block">Delete WIFI settings</a>
-                  <a role="button" href='/reset?type=all' class="btn btn-danger btn-lg btn-block">Delete ALL settings</a>
+                  <form action="/reset" method="post">
+                    <input type="submit" class="btn btn-warning btn-lg btn-block" value="Delete WIFI settings" >
+                    <input type="hidden" name="type" value="wifi">
+                  </form>
+                </div>
+              </div>
+              <div class="form-group form-group-lg row">
+                <div class="col-sm-offset-3 col-sm-6">
+                  <form action="/reset" method="post">
+                    <input type="submit" class="btn btn-danger btn-lg btn-block" value="Delete ALL settings" >
+                    <input type="hidden" name="type" value="all">
+                  </form>
                 </div>
               </div>
           </div>
@@ -193,7 +202,6 @@
           </div>
         </div>
       </div>
-      </form>
     </div>
 
   <!-- request js from the ESP8266 web server -->
