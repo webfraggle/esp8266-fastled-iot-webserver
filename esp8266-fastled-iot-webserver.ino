@@ -64,7 +64,7 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
-#define HOSTNAME "LEDs"                 // Name that appears in your network, don't use whitespaces, use "-" instead
+#define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 /*
@@ -184,13 +184,13 @@ extern "C" {
  * 
  */
 #ifdef ENABLE_ALEXA_SUPPORT
-    #define ALEXA_DEVICE_NAME           HOSTNAME
-    //#define AddAutoplayDevice             ((String)HOSTNAME + (String)" Autoplay")
-    //#define AddStrobeDevice               ((String)HOSTNAME + (String)" Strobe")
-    //#define AddSpecificPatternDeviceA     ((String)HOSTNAME + (String)" Party")
-    //#define AddSpecificPatternDeviceB     ((String)HOSTNAME + (String)" Chill")
-    //#define AddSpecificPatternDeviceC     ((String)HOSTNAME + (String)" Rainbow")
-    //#define AddAudioDevice                ((String)HOSTNAME + (String)" Audio")
+    //#define ALEXA_DEVICE_NAME           DEFAULT_HOSTNAME
+    //#define AddAutoplayDevice             ((String)DEFAULT_HOSTNAME + (String)" Autoplay")
+    //#define AddStrobeDevice               ((String)DEFAULT_HOSTNAME + (String)" Strobe")
+    //#define AddSpecificPatternDeviceA     ((String)DEFAULT_HOSTNAME + (String)" Party")
+    //#define AddSpecificPatternDeviceB     ((String)DEFAULT_HOSTNAME + (String)" Chill")
+    //#define AddSpecificPatternDeviceC     ((String)DEFAULT_HOSTNAME + (String)" Rainbow")
+    //#define AddAudioDevice                ((String)DEFAULT_HOSTNAME + (String)" Audio")
     //#define SpecificPatternA 37           // Parameter defines what pattern gets executed
     //#define SpecificPatternB 12           // Parameter defines what pattern gets executed
     //#define SpecificPatternC 0            // Parameter defines what pattern gets executed
@@ -256,8 +256,12 @@ if you have connected the ring first it should look like this: const int twpOffs
 
 /*######################## MQTT Configuration ########################*/
 #ifdef ENABLE_MQTT_SUPPORT
-    const char* mqttServer = "homeassistant.local";
-    const int mqttPort = 1883;
+    // these are deafault settings which can be changed in the web interface "settings" page
+    #define MQTT_ENABLED 0
+    #define MQTT_HOSTNAME "homeassistant.local"
+    #define MQTT_PORT 1883
+    #define MQTT_USER "MyUserName"
+    #define MQTT_PASS ""
     #if DEVICE_TYPE == 0
         #define MQTT_TOPIC "homeassistant/light/ledstrip"               // MQTT Topic to Publish to for state and config (Home Assistant)
         #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
@@ -286,9 +290,6 @@ if you have connected the ring first it should look like this: const int twpOffs
     #define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()                    // A Unique Identifier for the device in Homeassistant (MAC Address used by default)
     #define MQTT_MAX_PACKET_SIZE 512
     #define MQTT_MAX_TRANSFER_SIZE 512
-    // For the user / password check the Secrets.h file and modify your settings in there.
-    // const char* mqttUser = "YourMqttUser";
-    // const char* mqttPassword = "YourMqttUserPassword";
 
     #include <PubSubClient.h>                                           // Include the MQTT Library, must be installed via the library manager
     #include <ArduinoJson.h> 
@@ -369,19 +370,42 @@ if you have connected the ring first it should look like this: const int twpOffs
     uint8_t incomingPacket[PACKET_LENGTH + 1];
 #endif
 
+// define EEPROM settings
+//  https://www.kriwanek.de/index.php/de/homeautomation/esp8266/364-eeprom-für-parameter-verwenden
+
+typedef struct {
+  uint8_t brightness;
+  uint8_t currentPatternIndex;
+  uint8_t red;
+  uint8_t green;
+  uint8_t blue;
+  uint8_t power;
+  uint8_t autoplay;
+  uint8_t autoplayDuration;
+  uint8_t currentPaletteIndex;
+  uint8_t speed;
+  char hostname[33];
+  uint8_t MQTTEnabled;
+  char MQTTHost[65];
+  uint16_t MQTTPort;
+  char MQTTUser[33];
+  char MQTTPass[65];
+  char MQTTTopic[65];
+  char MQTTDeviceName[33];
+} configData_t;
+
+configData_t cfg;
+configData_t default_cfg;
+
+// set to true if config has changed
+bool save_config = false;
+
 ESP8266WebServer webServer(80);
 
 #include "FSBrowser.h"
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 #define FRAMES_PER_SECOND  120  // here you can control the speed. With the Access Point / Web Server the animations run a bit slower.
 #define SOUND_REACTIVE_FPS FRAMES_PER_SECOND
-
-#ifdef ENABLE_MQTT_SUPPORT
-#include "Secrets.h" // this file is intentionally not included in the sketch, so nobody accidentally commits their secret information.
-// MQTT user and password for your broker (if MQTT is enabled)
-// const char* mqttUser = "your-mqtt-user";
-// const char* mqttPassword = "your-mqtt-password";
-#endif
 
 #ifdef ENABLE_OTA_SUPPORT
 #include <ArduinoOTA.h>
@@ -404,7 +428,7 @@ CRGB leds[NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
 uint8_t brightnessMap[brightnessCount] = { 5, 32, 64, 128, 255 };
-uint8_t brightnessIndex = 0;
+uint8_t brightnessIndex = 3;
 
 // ten seconds per color palette makes a good demo
 // 20-120 is better for deployment
@@ -634,10 +658,10 @@ void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
 {
     solidColor = CRGB(r, g, b);
 
-    EEPROM.write(2, r);
-    EEPROM.write(3, g);
-    EEPROM.write(4, b);
-    EEPROM.commit();
+    cfg.red = r;
+    cfg.green = g;
+    cfg.blue = b;
+    save_config = true;
 
     if (updatePattern && currentPatternIndex != patternCount - 2)setPattern(patternCount - 1);
 
@@ -683,7 +707,40 @@ void addRebootPage(int webServerNr)
     #endif // ENABLE_ALEXA_SUPPORT
 }
 
+// we can't assing wifiManager.resetSettings(); to reset, somewhow it gets called straight away.
+void setWiFiConf(String ssid, String password)
+{
+#ifdef ESP8266
+    struct station_config conf;
 
+    wifi_station_get_config(&conf);
+
+    memset(conf.ssid, 0, sizeof(conf.ssid));
+    for (int i = 0; i < ssid.length() && i < sizeof(conf.ssid); i++)
+        conf.ssid[i] = ssid.charAt(i);
+
+    memset(conf.password, 0, sizeof(conf.password));
+    for (int i = 0; i < password.length() && i < sizeof(conf.password); i++)
+        conf.password[i] = password.charAt(i);
+
+    wifi_station_set_config(&conf);
+
+// untested due to lack of ESP32
+#elif defined(ESP32)
+    if(WiFiGenericClass::getMode() != WIFI_MODE_NULL){
+
+          wifi_config_t conf;
+          esp_wifi_get_config(WIFI_IF_STA, &conf);
+
+          memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
+          ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
+          memset(conf.sta.password, 0, sizeof(conf.sta.password));
+          password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
+
+          esp_wifi_set_config(WIFI_IF_STA, &conf);
+    }
+#endif
+}
 void setup() {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     Serial.begin(115200);
@@ -706,8 +763,16 @@ void setup() {
     fill_solid(leds, NUM_LEDS, CRGB::Black);
     FastLED.show();
 
-    EEPROM.begin(4095);
-    loadSettings();
+    // set a default config to be used on config reset
+    default_cfg.brightness = brightness;
+    default_cfg.currentPatternIndex = currentPatternIndex;
+    default_cfg.power = power;
+    default_cfg.autoplay = autoplay;
+    default_cfg.autoplayDuration = autoplayDuration;
+    default_cfg.currentPaletteIndex = currentPaletteIndex;
+    default_cfg.speed = speed;
+
+    loadConfig();
 
     FastLED.setBrightness(brightness);
 
@@ -750,27 +815,20 @@ void setup() {
         String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
     macID.toUpperCase();
 
-    String nameString = ((String)HOSTNAME + ' - ' + macID);
+    String nameString = String(cfg.hostname) + String(" - ") + macID;
 
     char nameChar[nameString.length() + 1];
-    memset(nameChar, 0, nameString.length() + 1);
+    nameString.toCharArray(nameChar, sizeof(nameChar));
 
-    for (int i = 0; i < nameString.length(); i++)
-        nameChar[i] = nameString.charAt(i);
-
-    Serial.printf("Name: %s\n", nameChar);
-
-    //reset settings - wipe credentials for testing
-    // wifiManager.resetSettings();
-
+    wifiManager.setHostname(cfg.hostname);
     wifiManager.setConfigPortalBlocking(false);
+    wifiManager.setSaveConfigCallback(handleReboot);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
     if (wifiManager.autoConnect(nameChar)) {
         Serial.println("Wi-Fi connected");
-    }
-    else {
+    } else {
         Serial.println("Wi-Fi manager portal running");
     }
 
@@ -798,7 +856,7 @@ void setup() {
         //delay(500);
         //webServer.close();
         //delay(500);
-        ArduinoOTA.setHostname(HOSTNAME);
+        ArduinoOTA.setHostname(cfg.hostname);
 #ifdef OTA_PASSWORD
         ArduinoOTA.setPassword(OTA_PASSWORD);
 #endif
@@ -857,7 +915,7 @@ void setup() {
 #ifdef ALEXA_DEVICE_NAME
     alexa_main = new EspalexaDevice(ALEXA_DEVICE_NAME, mainAlexaEvent, EspalexaDeviceType::color);
 #else
-    alexa_main = new EspalexaDevice(HOSTNAME, mainAlexaEvent, EspalexaDeviceType::color);
+    alexa_main = new EspalexaDevice(cfg.hostname, mainAlexaEvent, EspalexaDeviceType::color);
 #endif
     espalexa.addDevice(alexa_main);
 #ifdef AddAutoplayDevice
@@ -927,6 +985,8 @@ void setup() {
             delay(1);
         }
         });
+#else
+    addRebootPage(0);
 #endif
 
     webServer.on("/all", HTTP_GET, []() {
@@ -934,11 +994,139 @@ void setup() {
         json += ",{\"name\":\"lines\",\"label\":\"Amount of Lines for the Visualizer\",\"type\":\"String\",\"value\":";
         json += PACKET_LENGTH;
         json += "}";
-        json += ",{\"name\":\"hostname\",\"label\":\"Name of the device\",\"type\":\"String\",\"value\":\"";
-        json += HOSTNAME;
+        json += ",{\"name\":\"hostname\",\"label\":\"Name of the device\",\"type\":\"Setting\",\"value\":\"";
+        json += cfg.hostname;
         json += "\"}";
+        json += ",{\"name\":\"otaSupport\",\"label\":\"Device supports OTA\",\"type\":\"Setting\",\"value\":";
+#ifdef ENABLE_OTA_SUPPORT
+        json += "true";
+#else
+        json += "false";
+#endif
+        json += "}";
+        json += ",{\"name\":\"alexaSupport\",\"label\":\"Device supports Alexa\",\"type\":\"Setting\",\"value\":";
+#ifdef ENABLE_ALEXA_SUPPORT
+        json += "true";
+#else
+        json += "false";
+#endif
+        json += "}";
+        json += ",{\"name\":\"mqttSupport\",\"label\":\"Device supports MQTT\",\"type\":\"Setting\",\"value\":";
+#ifdef ENABLE_MQTT_SUPPORT
+        json += "true";
+#else
+        json += "false";
+#endif
+        json += "}";
+#ifdef ENABLE_MQTT_SUPPORT
+        json += ",{\"name\":\"mqttSettings\",\"label\":\"MQTT Settings\",\"type\":\"Setting\",\"enabled\":";
+        json += cfg.MQTTEnabled;
+        json += ",\"hostname\":\"";
+        json += cfg.MQTTHost;
+        json += "\",\"port\":";
+        json += cfg.MQTTPort;
+        json += ",\"username\":\"";
+        json += cfg.MQTTUser;
+        json += "\",\"topic\":\"";
+        json += cfg.MQTTTopic;
+        json += "\",\"devicename\":\"";
+        json += cfg.MQTTDeviceName;
+        json += "\"}";
+#endif
         json += "]";
         webServer.send(200, "text/json", json);
+        });
+
+    webServer.on("/settings", HTTP_POST, []() {
+
+        bool force_restart = false;
+
+        String ssid = webServer.arg("ssid");
+        String password = webServer.arg("password");
+
+        if (ssid.length() != 0 && password.length() != 0) {
+            setWiFiConf(ssid, password);
+            force_restart = true;
+        }
+
+        String new_hostname = webServer.arg("hostname");
+
+        if (new_hostname.length() != 0 && String(cfg.hostname) != new_hostname) {
+          setHostname(new_hostname);
+          force_restart = true;
+        }
+
+#ifdef ENABLE_MQTT_SUPPORT
+        uint8_t mqtt_enabled = uint8_t(webServer.arg("mqtt-enabled").toInt());
+        String mqtt_hostname = webServer.arg("mqtt-hostname");
+        uint16_t mqtt_port = uint16_t(webServer.arg("mqtt-port").toInt());
+        String mqtt_username = webServer.arg("mqtt-user");
+        String mqtt_password = webServer.arg("mqtt-password");
+        String mqtt_topic = webServer.arg("mqtt-topic");
+        String mqtt_device_name = webServer.arg("mqtt-device-name");
+
+        if (cfg.MQTTEnabled != mqtt_enabled) {
+            cfg.MQTTEnabled = mqtt_enabled;
+            save_config = true;
+        }
+        if (cfg.MQTTPort != mqtt_port) {
+            cfg.MQTTPort = mqtt_port;
+            force_restart = true;
+        }
+        if (mqtt_hostname.length() > 0 && String(cfg.MQTTHost) != mqtt_hostname) {
+            mqtt_hostname.toCharArray(cfg.MQTTHost, sizeof(cfg.MQTTHost));
+            force_restart = true;
+        }
+        if (mqtt_username.length() > 0 && String(cfg.MQTTUser) != mqtt_username) {
+            mqtt_username.toCharArray(cfg.MQTTUser, sizeof(cfg.MQTTUser));
+            force_restart = true;
+        }
+        if (mqtt_password.length() > 0 && String(cfg.MQTTPass) != mqtt_password) {
+            mqtt_password.toCharArray(cfg.MQTTPass, sizeof(cfg.MQTTPass));
+            force_restart = true;
+        }
+        if (mqtt_topic.length() > 0 && String(cfg.MQTTTopic) != mqtt_topic) {
+            mqtt_topic.toCharArray(cfg.MQTTTopic, sizeof(cfg.MQTTTopic));
+            force_restart = true;
+        }
+        if (mqtt_device_name.length() > 0 && String(cfg.MQTTDeviceName) != mqtt_device_name) {
+            mqtt_device_name.toCharArray(cfg.MQTTDeviceName, sizeof(cfg.MQTTDeviceName));
+            force_restart = true;
+        }
+#endif
+        if (force_restart) {
+          saveConfig(true);
+          handleReboot();
+        } else {
+          webServer.send(200, "text/html", "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/settings.htm\"/></head><body></body>");
+        }
+        });
+
+    webServer.on("/reset", HTTP_POST, []() {
+
+        // delete EEPROM settings
+        if (webServer.arg("type") == String("all")) {
+            // delete EEPROM config
+            EEPROM.begin(4095);
+            for (int i = 0 ; i < sizeof(cfg) ; i++) {
+                EEPROM.write(i, 0);
+            }
+            delay(200);
+            EEPROM.commit();
+            EEPROM.end();
+
+            // set to default config
+            cfg = default_cfg;
+            saveConfig(true);
+        }
+
+        // delete wireless config
+        if (webServer.arg("type") == String("wifi") || webServer.arg("type") == String("all")) {
+            setWiFiConf(String(""), String(""));
+        }
+        webServer.send(200, "text/html", "<html><head></head><body><font face='arial'><b><h2>Config reset finished. Device is rebooting now and you need to connect to the wireless again.</h2></b></font></body></html>");
+        delay(500);
+        ESP.restart();
         });
 
     webServer.on("/fieldValue", HTTP_GET, []() {
@@ -1114,7 +1302,8 @@ void broadcastInt(String name, uint8_t value)
     String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
     //  webSocketsServer.broadcastTXT(json);
     #ifdef ENABLE_MQTT_SUPPORT
-        sendStatus();
+        if (cfg.MQTTEnabled == 1)
+            sendStatus();
     #endif
 }
 
@@ -1123,7 +1312,8 @@ void broadcastString(String name, String value)
     String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
     //  webSocketsServer.broadcastTXT(json);
     #ifdef ENABLE_MQTT_SUPPORT
-        sendStatus();
+        if (cfg.MQTTEnabled == 1)
+            sendStatus();
     #endif
 }
 
@@ -1133,7 +1323,6 @@ void loop() {
 
     //  dnsServer.processNextRequest();
     //  webSocketsServer.loop();
-    wifiManager.process();
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else
@@ -1142,15 +1331,12 @@ void loop() {
 #ifdef ENABLE_MULTICAST_DNS
     MDNS.update();
 #endif // ENABLE_MULTICAST_DNS
-#ifdef ENABLE_MQTT_SUPPORT
-    mqttClient.loop();
-#endif
 
-    //  handleIrInput();
+    wifiManager.process();
 
     static bool hasConnected = false;
     EVERY_N_SECONDS(1) {
-        if (WiFi.status() != WL_CONNECTED) {
+        if (wifiManager.getLastConxResult() != WL_CONNECTED) {
             //      Serial.printf("Connecting to %s\n", ssid);
             hasConnected = false;
         }
@@ -1160,11 +1346,10 @@ void loop() {
             Serial.print(WiFi.localIP());
             Serial.println(" in your browser");
 #ifdef ENABLE_MULTICAST_DNS
-            if (!MDNS.begin(HOSTNAME)) {
-                Serial.println("\nError setting up MDNS responder! \n");
-            }
-            else {
-                Serial.println("\nmDNS responder started \n");
+            if (!MDNS.begin(cfg.hostname)) {
+                Serial.println("\nError while setting up MDNS responder! \n");
+            } else {
+                Serial.println("mDNS responder started");
                 MDNS.addService("http", "tcp", 80);
             }
 #endif
@@ -1173,16 +1358,22 @@ void loop() {
 
 #ifdef ENABLE_MQTT_SUPPORT
     static bool mqttConnected = false;
+
+    if (cfg.MQTTEnabled == 1)
+        mqttClient.loop();
+    else
+        mqttConnected = false;
+
     EVERY_N_SECONDS(10) {
-        if (!mqttClient.connected()) {
-            mqttClient.setServer(mqttServer, mqttPort);
+        if (!mqttClient.connected() && cfg.MQTTEnabled != 0) {
+            mqttClient.setServer(cfg.MQTTHost, cfg.MQTTPort);
             mqttClient.setCallback(mqttCallback);
             mqttConnected = false;
         }
-        if (!mqttConnected) {
+        if (!mqttConnected && cfg.MQTTEnabled != 0) {
             mqttConnected = true;
             Serial.println("Connecting to MQTT...");
-            if (mqttClient.connect(HOSTNAME, mqttUser, mqttPassword)) {
+            if (mqttClient.connect(cfg.hostname, cfg.MQTTUser, cfg.MQTTPass)) {
                 mqttClient.setKeepAlive(10);
                 Serial.println("connected \n");
 
@@ -1190,12 +1381,12 @@ void loop() {
                 mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
                 DynamicJsonDocument JSONencoder(2048);
-                JSONencoder["~"] = MQTT_TOPIC,
-                    JSONencoder["name"] = MQTT_DEVICE_NAME,
+                    JSONencoder["~"] = cfg.MQTTTopic,
+                    JSONencoder["name"] = cfg.MQTTDeviceName,
                     JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
                     JSONencoder["dev"]["mf"] = "Surrbradl08",
                     JSONencoder["dev"]["mdl"] = "0.4",
-                    JSONencoder["dev"]["name"] = MQTT_DEVICE_NAME,
+                    JSONencoder["dev"]["name"] = cfg.MQTTDeviceName,
                     JSONencoder["stat_t"] = "~",
                     JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,
                     JSONencoder["brightness"] = true,
@@ -1274,21 +1465,44 @@ void loop() {
     // insert a delay to keep the framerate modest
     //FastLED.delay(1000 / FRAMES_PER_SECOND);
     delay(1000 / FRAMES_PER_SECOND);
+
+    // save config changes only every 10 seconds
+    EVERY_N_SECONDS(10) {
+        saveConfig(save_config);
+    }
 }
 
-void loadSettings()
-{
-    brightness = EEPROM.read(0);
+void saveConfig(bool save) {
+    // Save configuration from RAM into EEPROM
+    if (save == true) {
+        EEPROM.begin(4095);
+        EEPROM.put(0, cfg );
+        delay(200);
+        EEPROM.commit();
+        EEPROM.end();
 
-    currentPatternIndex = EEPROM.read(1);
+        save_config = false;
+    }
+}
+
+void loadConfig()
+{
+    // Loads configuration from EEPROM into RAM
+    EEPROM.begin(4095);
+    EEPROM.get(0, cfg );
+    EEPROM.end();
+
+    brightness = cfg.brightness;
+
+    currentPatternIndex = cfg.currentPatternIndex;
     if (currentPatternIndex < 0)
         currentPatternIndex = 0;
     else if (currentPatternIndex >= patternCount)
         currentPatternIndex = patternCount - 1;
 
-    byte r = EEPROM.read(2);
-    byte g = EEPROM.read(3);
-    byte b = EEPROM.read(4);
+    byte r = cfg.red;
+    byte g = cfg.green;
+    byte b = cfg.blue;
 
     if (r == 0 && g == 0 && b == 0)
     {
@@ -1298,25 +1512,65 @@ void loadSettings()
         solidColor = CRGB(r, g, b);
     }
 
-    power = EEPROM.read(5);
+    power = cfg.power;
 
-    autoplay = EEPROM.read(6);
-    autoplayDuration = EEPROM.read(7);
+    autoplay = cfg.autoplay;
+    autoplayDuration = cfg.autoplayDuration;
 
-    currentPaletteIndex = EEPROM.read(8);
+    currentPaletteIndex = cfg.currentPaletteIndex;
     if (currentPaletteIndex < 0)
         currentPaletteIndex = 0;
     else if (currentPaletteIndex >= paletteCount)
         currentPaletteIndex = paletteCount - 1;
-    speed = EEPROM.read(9);
+
+    speed = cfg.speed;
+
+    if (!isValidHostname(cfg.hostname, sizeof(cfg.hostname))) {
+        strncpy(cfg.hostname, DEFAULT_HOSTNAME, sizeof(cfg.hostname));
+        save_config = true;
+    }
+
+#ifdef ENABLE_MQTT_SUPPORT
+    // fall back to default settings if hostname is invalid
+    if (!isValidHostname(cfg.MQTTHost, sizeof(cfg.MQTTHost))) {
+        cfg.MQTTEnabled = MQTT_ENABLED;
+        strncpy(cfg.MQTTHost, MQTT_HOSTNAME, sizeof(cfg.MQTTHost));
+        cfg.MQTTPort = uint16_t(MQTT_PORT);
+        strncpy(cfg.MQTTUser, MQTT_USER, sizeof(cfg.MQTTUser));
+        strncpy(cfg.MQTTPass, MQTT_PASS, sizeof(cfg.MQTTPass));
+        strncpy(cfg.MQTTTopic, MQTT_TOPIC, sizeof(cfg.MQTTTopic));
+        strncpy(cfg.MQTTDeviceName, MQTT_DEVICE_NAME, sizeof(cfg.MQTTDeviceName));
+        save_config = true;
+    }
+#endif
+}
+
+bool isValidHostname(char *hostname_to_check, long size)
+{
+    for (int i = 0; i < size; i++) {
+        if (hostname_to_check[i] == '-' || hostname_to_check[i] == '.')
+          continue;
+        else if (hostname_to_check[i] >= '0' && hostname_to_check[i] <= '9')
+          continue;
+        else if (hostname_to_check[i] >= 'A' && hostname_to_check[i] <= 'Z')
+          continue;
+        else if (hostname_to_check[i] >= 'a' && hostname_to_check[i] <= 'z')
+          continue;
+        else if (hostname_to_check[i] == 0 && i>0)
+          break;
+
+        return false;
+    }
+
+    return true;
 }
 
 void setPower(uint8_t value)
 {
     power = value == 0 ? 0 : 1;
 
-    EEPROM.write(5, power);
-    EEPROM.commit();
+    cfg.power = power;
+    save_config = true;
 
     broadcastInt("power", power);
 }
@@ -1325,8 +1579,8 @@ void setAutoplay(uint8_t value)
 {
     autoplay = value == 0 ? 0 : 1;
 
-    EEPROM.write(6, autoplay);
-    EEPROM.commit();
+    cfg.autoplay = autoplay;
+    save_config = true;
 
     broadcastInt("autoplay", autoplay);
 }
@@ -1335,8 +1589,8 @@ void setAutoplayDuration(uint8_t value)
 {
     autoplayDuration = value;
 
-    EEPROM.write(7, autoplayDuration);
-    EEPROM.commit();
+    cfg.autoplayDuration = autoplayDuration;
+    save_config = true;
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
 
@@ -1378,8 +1632,8 @@ void adjustPattern(bool up)
         currentPatternIndex = 0;
 
     if (autoplay == 0) {
-        EEPROM.write(1, currentPatternIndex);
-        EEPROM.commit();
+        cfg.currentPatternIndex = currentPatternIndex;
+        save_config = true;
     }
 
 #ifdef AUTOPLAY_IGNORE_UDP_PATTERNS
@@ -1401,8 +1655,8 @@ void setPattern(uint8_t value)
     currentPatternIndex = value;
 
     if (autoplay != 1) {
-        EEPROM.write(1, currentPatternIndex);
-        EEPROM.commit();
+        cfg.currentPatternIndex = currentPatternIndex;
+        save_config = true;
     }
 
     broadcastInt("pattern", currentPatternIndex);
@@ -1426,8 +1680,8 @@ void setPalette(uint8_t value)
 
     currentPaletteIndex = value;
 
-    EEPROM.write(8, currentPaletteIndex);
-    EEPROM.commit();
+    cfg.currentPaletteIndex = currentPaletteIndex;
+    save_config = true;
 
     broadcastInt("palette", currentPaletteIndex);
 }
@@ -1449,14 +1703,7 @@ void adjustBrightness(bool up)
     else if (!up && brightnessIndex > 0)
         brightnessIndex--;
 
-    brightness = brightnessMap[brightnessIndex];
-
-    FastLED.setBrightness(brightness);
-
-    EEPROM.write(0, brightness);
-    EEPROM.commit();
-
-    broadcastInt("brightness", brightness);
+    setBrightness(brightnessMap[brightnessIndex]);
 }
 
 void setBrightness(uint8_t value)
@@ -1469,8 +1716,8 @@ void setBrightness(uint8_t value)
 
     FastLED.setBrightness(brightness);
 
-    EEPROM.write(0, brightness);
-    EEPROM.commit();
+    cfg.brightness = brightness;
+    save_config = true;
 
     broadcastInt("brightness", brightness);
 }
@@ -1483,12 +1730,27 @@ void setSpeed(uint8_t value)
 
     speed = value;
 
-    FastLED.setBrightness(brightness);
+    cfg.speed = speed;
+    save_config = true;
 
-    EEPROM.write(9, speed);
-    EEPROM.commit();
+    broadcastInt("speed", speed);
+}
 
-    broadcastInt("speed", brightness);
+void setHostname(String new_hostname)
+{
+    int j = 0;
+    for (int i = 0; i < new_hostname.length() && i < sizeof(cfg.hostname); i++) {
+        if (new_hostname.charAt(i) == '-' or \
+           (new_hostname.charAt(i) >= '0' && new_hostname.charAt(i) <= '9') or \
+           (new_hostname.charAt(i) >= 'A' && new_hostname.charAt(i) <= 'Z') or \
+           (new_hostname.charAt(i) >= 'a' && new_hostname.charAt(i) <= 'z')) {
+
+            cfg.hostname[j] = new_hostname.charAt(i);
+            j++;
+        }
+    }
+    cfg.hostname[j] = '\0';
+    save_config = true;
 }
 
 void strandTest()
@@ -4364,16 +4626,16 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
                 const char* ckey = o.key().c_str();
                 JsonVariant cv = o.value();
                 if (strcmp(ckey, "r") == 0) {
-                    cr = cv.as<int>();
+                    cr = cv.as<uint8_t>();
                 }
                 if (strcmp(ckey, "g") == 0) {
-                    cg = cv.as<int>();
+                    cg = cv.as<uint8_t>();
                 }
                 if (strcmp(ckey, "b") == 0) {
-                    cb = cv.as<int>();
+                    cb = cv.as<uint8_t>();
                 }
             }
-            setSolidColor(cr, cg, cb);
+            setSolidColor(cr, cg, cb, false);
         }
     }
     mqttProcessing = false;
