@@ -1325,7 +1325,6 @@ void loop() {
 
     //  dnsServer.processNextRequest();
     //  webSocketsServer.loop();
-    wifiManager.process();
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else
@@ -1334,6 +1333,8 @@ void loop() {
 #ifdef ENABLE_MULTICAST_DNS
     MDNS.update();
 #endif // ENABLE_MULTICAST_DNS
+
+    wifiManager.process();
 
     static bool hasConnected = false;
     EVERY_N_SECONDS(1) {
@@ -1481,6 +1482,8 @@ void saveConfig(bool save) {
         delay(200);
         EEPROM.commit();
         EEPROM.end();
+
+        save_config = false;
     }
 }
 
@@ -1653,9 +1656,10 @@ void setPattern(uint8_t value)
 
     currentPatternIndex = value;
 
-    if (autoplay != 1)
+    if (autoplay != 1) {
         cfg.currentPatternIndex = currentPatternIndex;
         save_config = true;
+    }
 
     broadcastInt("pattern", currentPatternIndex);
 }
@@ -1702,15 +1706,6 @@ void adjustBrightness(bool up)
         brightnessIndex--;
 
     setBrightness(brightnessMap[brightnessIndex]);
-/*    brightness = brightnessMap[brightnessIndex];
-
-    FastLED.setBrightness(brightness);
-
-    EEPROM.write(SETTING_BRIGTHNESS, brightness);
-    EEPROM.commit();
-
-    broadcastInt("brightness", brightness);
-*/
 }
 
 void setBrightness(uint8_t value)
