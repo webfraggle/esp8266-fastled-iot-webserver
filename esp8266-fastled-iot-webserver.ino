@@ -813,24 +813,14 @@ void setup() {
     nameString.toCharArray(nameChar, sizeof(nameChar));
 
     wifiManager.setHostname(cfg.hostname);
+    wifiManager.setConfigPortalBlocking(false);
+    wifiManager.setSaveConfigCallback(handleReboot);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
     if (wifiManager.autoConnect(nameChar)) {
         Serial.println("Wi-Fi connected");
-        Serial.print("Open http://");
-        Serial.print(WiFi.localIP());
-        Serial.println(" in your browser");
-#ifdef ENABLE_MULTICAST_DNS
-        if (!MDNS.begin(cfg.hostname)) {
-            Serial.println("\nError while setting up MDNS responder! \n");
-        } else {
-            Serial.println("mDNS responder started");
-            MDNS.addService("http", "tcp", 80);
-        }
-#endif
-    }
-    else {
+    } else {
         Serial.println("Wi-Fi manager portal running");
     }
 
@@ -1330,6 +1320,29 @@ void loop() {
 #ifdef ENABLE_MULTICAST_DNS
     MDNS.update();
 #endif // ENABLE_MULTICAST_DNS
+
+    static bool hasConnected = false;
+    EVERY_N_SECONDS(1) {
+        if (wifiManager.getLastConxResult() != WL_CONNECTED) {
+            //      Serial.printf("Connecting to %s\n", ssid);
+            hasConnected = false;
+        }
+        else if (!hasConnected) {
+            hasConnected = true;
+            Serial.print("Connected! Open http://");
+            Serial.print(WiFi.localIP());
+            Serial.println(" in your browser");
+#ifdef ENABLE_MULTICAST_DNS
+            if (!MDNS.begin(cfg.hostname)) {
+                Serial.println("\nError while setting up MDNS responder! \n");
+            } else {
+                Serial.println("mDNS responder started");
+                MDNS.addService("http", "tcp", 80);
+            }
+#endif
+        }
+    }
+
 #ifdef ENABLE_MQTT_SUPPORT
     static bool mqttConnected = false;
 
