@@ -288,8 +288,8 @@ if you have connected the ring first it should look like this: const int twpOffs
         #define MQTT_DEVICE_NAME "Animated Logo"
     #endif
     #define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()                    // A Unique Identifier for the device in Homeassistant (MAC Address used by default)
-    #define MQTT_MAX_PACKET_SIZE 512
-    #define MQTT_MAX_TRANSFER_SIZE 512
+    #define MQTT_MAX_PACKET_SIZE 1024
+    #define MQTT_MAX_TRANSFER_SIZE 1024
 
     #include <PubSubClient.h>                                           // Include the MQTT Library, must be installed via the library manager
     #include <ArduinoJson.h> 
@@ -1380,12 +1380,12 @@ void loop() {
                 Serial.println("Subscribing to MQTT Topics \n");
                 mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
-                DynamicJsonDocument JSONencoder(2048);
+                DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
                     JSONencoder["name"] = cfg.MQTTDeviceName,
                     JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
                     JSONencoder["dev"]["mf"] = "Surrbradl08",
-                    JSONencoder["dev"]["mdl"] = "0.4",
+                    JSONencoder["dev"]["mdl"] = "0.4.4",
                     JSONencoder["dev"]["name"] = cfg.MQTTDeviceName,
                     JSONencoder["stat_t"] = "~",
                     JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,
