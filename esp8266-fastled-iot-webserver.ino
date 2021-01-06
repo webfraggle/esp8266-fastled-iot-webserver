@@ -288,8 +288,8 @@ if you have connected the ring first it should look like this: const int twpOffs
         #define MQTT_DEVICE_NAME "Animated Logo"
     #endif
     #define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()                    // A Unique Identifier for the device in Homeassistant (MAC Address used by default)
-    #define MQTT_MAX_PACKET_SIZE 512
-    #define MQTT_MAX_TRANSFER_SIZE 512
+    #define MQTT_MAX_PACKET_SIZE 1024
+    #define MQTT_MAX_TRANSFER_SIZE 1024
 
     #include <PubSubClient.h>                                           // Include the MQTT Library, must be installed via the library manager
     #include <ArduinoJson.h> 
@@ -968,52 +968,41 @@ void setup() {
     addRebootPage(0);
 #endif
 
-    webServer.on("/all", HTTP_GET, []() {
+    webServer.on("/config.json", HTTP_GET, []() {
         String json = getFieldsJson(fields, fieldCount);
         json += ",{\"name\":\"lines\",\"label\":\"Amount of Lines for the Visualizer\",\"type\":\"String\",\"value\":";
         json += PACKET_LENGTH;
         json += "}";
-        json += ",{\"name\":\"hostname\",\"label\":\"Name of the device\",\"type\":\"Setting\",\"value\":\"";
-        json += cfg.hostname;
-        json += "\"}";
-        json += ",{\"name\":\"otaSupport\",\"label\":\"Device supports OTA\",\"type\":\"Setting\",\"value\":";
+        json += ",{\"name\":\"settings\",\"label\":\"Device settings\",\"type\":\"Setting\",\"value\":";
+        json += "{\"deviceHostname\":\"" + String(cfg.hostname) + "\"";
+        json += ",\"otaSupport\":";
 #ifdef ENABLE_OTA_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
-        json += ",{\"name\":\"alexaSupport\",\"label\":\"Device supports Alexa\",\"type\":\"Setting\",\"value\":";
+        json += ", \"alexaSupport\":";
 #ifdef ENABLE_ALEXA_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
-        json += ",{\"name\":\"mqttSupport\",\"label\":\"Device supports MQTT\",\"type\":\"Setting\",\"value\":";
+        json += ", \"mqttSupport\":";
 #ifdef ENABLE_MQTT_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
 #ifdef ENABLE_MQTT_SUPPORT
-        json += ",{\"name\":\"mqttSettings\",\"label\":\"MQTT Settings\",\"type\":\"Setting\",\"enabled\":";
-        json += cfg.MQTTEnabled;
-        json += ",\"hostname\":\"";
-        json += cfg.MQTTHost;
-        json += "\",\"port\":";
-        json += cfg.MQTTPort;
-        json += ",\"username\":\"";
-        json += cfg.MQTTUser;
-        json += "\",\"topic\":\"";
-        json += cfg.MQTTTopic;
-        json += "\",\"devicename\":\"";
-        json += cfg.MQTTDeviceName;
-        json += "\"}";
+        json += ",\"mqttEnabled\":" + String(cfg.MQTTEnabled);
+        json += ",\"mqttHostname\":\"" + String(cfg.MQTTHost) + "\"";
+        json += ",\"mqttPort\":\"" + String(cfg.MQTTPort) + "\"";
+        json += ",\"mqttUsername\":\"" + String(cfg.MQTTUser) + "\"";
+        json += ",\"mqttTopic\":\"" + String(cfg.MQTTTopic) + "\"";
+        json += ",\"mqttDevicename\":\"" + String(cfg.MQTTDeviceName) + "\"";
 #endif
-        json += "]";
-        webServer.send(200, "text/json", json);
+        json += "}}]";
+        webServer.send(200, "application/json", json);
         });
 
     webServer.on("/settings", HTTP_POST, []() {
@@ -1348,12 +1337,12 @@ void loop() {
                 Serial.println("Subscribing to MQTT Topics \n");
                 mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
-                DynamicJsonDocument JSONencoder(2048);
+                DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
                     JSONencoder["name"] = cfg.MQTTDeviceName,
                     JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
                     JSONencoder["dev"]["mf"] = "Surrbradl08",
-                    JSONencoder["dev"]["mdl"] = "0.4",
+                    JSONencoder["dev"]["mdl"] = "0.4.4",
                     JSONencoder["dev"]["name"] = cfg.MQTTDeviceName,
                     JSONencoder["stat_t"] = "~",
                     JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,

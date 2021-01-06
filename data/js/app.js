@@ -28,7 +28,7 @@ ws.onmessage = function(evt) {
 $(document).ready(function() {
   $("#status").html("Connecting, please wait...");
 
-  $.get(urlBase + "all", function(data) {
+  $.get(urlBase + "config.json", function(data) {
       $("#status").html("Loading, please wait...");
 
       $.each(data, function(index, field) {
@@ -414,37 +414,30 @@ function updateFieldValue(name, value) {
   }
 }
 
-function handleSetting(field) {
+function handleSetting(config) {
 
-  if (field.name == "hostname") {
-    $("#inputHostname").val(field.value);
+  for (let [key, value] of Object.entries(config.value)) {
+    if (key.includes("Support") && value == true) {
+      $("#" + key + "Entry").removeClass("hidden");
+    } else {
+      $("#input-" + key).val(value);
+    }
   }
 
-  if (field.name.includes("Support") && field.value == false) {
-    $("#" + field.name + "Entry").addClass("hidden");
-  }
-  if (field.name == "mqttSettings") {
-    $("#btnOnmqtt").attr("class", field.enabled ? "btn btn-primary" : "btn btn-default");
-    $("#btnOffmqtt").attr("class", !field.enabled ? "btn btn-primary" : "btn btn-default");
-    $("#inputMqttEnabled").val(field.enabled ? "1" : "0");
+  $("#btnOnmqtt").attr("class", config.value.mqttEnabled ? "btn btn-primary" : "btn btn-default");
+  $("#btnOffmqtt").attr("class", !config.value.mqttEnabled ? "btn btn-primary" : "btn btn-default");
 
-    $("#btnOnmqtt").click(function() {
-      $("#btnOnmqtt").attr("class", "btn btn-primary");
-      $("#btnOffmqtt").attr("class", "btn btn-default");
-      $("#inputMqttEnabled").val("1");
-    });
-    $("#btnOffmqtt").click(function() {
-      $("#btnOnmqtt").attr("class", "btn btn-default");
-      $("#btnOffmqtt").attr("class", "btn btn-primary");
-      $("#inputMqttEnabled").val("0");
-    });
+  $("#btnOnmqtt").click(function() {
+    $("#btnOnmqtt").attr("class", "btn btn-primary");
+    $("#btnOffmqtt").attr("class", "btn btn-default");
+    $("#input-mqttEnabled").val("1");
+  });
+  $("#btnOffmqtt").click(function() {
+    $("#btnOnmqtt").attr("class", "btn btn-default");
+    $("#btnOffmqtt").attr("class", "btn btn-primary");
+    $("#input-mqttEnabled").val("0");
+  });
 
-    $("#inputMqttHostname").val(field.hostname);
-    $("#inputMqttPort").val(field.port);
-    $("#inputMqttUser").val(field.username);
-    $("#inputMqttTopic").val(field.topic);
-    $("#inputMqttDeviceName").val(field.devicename);
-  }
 }
 
 function setBooleanFieldValue(field, btnOn, btnOff, value) {
