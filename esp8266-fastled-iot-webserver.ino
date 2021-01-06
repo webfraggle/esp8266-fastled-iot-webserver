@@ -460,6 +460,7 @@ typedef Pattern PatternList[];
 typedef struct {
     Pattern pattern;
     String name;
+    // these settings decide if certain controls/fields are displayed in the web interface
     bool show_palette;
     bool show_speed;
     bool show_color_picker;
@@ -476,123 +477,123 @@ typedef PatternAndName PatternAndNameList[];
 PatternAndNameList patterns = {
 
     // Time patterns
-#if DEVICE_TYPE == 2
-    { displayTimeStatic,        "Time",                 true,  true,  true,  true,  true},
-    { displayTimeColorful,      "Time Colorful",        true,  true,  true,  true,  true},
-    { displayTimeGradient,      "Time Gradient",        true,  true,  true,  true,  true},
-    { displayTimeGradientLarge, "Time Gradient large",  true,  true,  true,  true,  true},
-    { displayTimeRainbow,       "Time Rainbow",         true,  true,  true,  true,  true},
+#if DEVICE_TYPE == 2                                 // palet  speed  color  spark  twinkle
+    { displayTimeStatic,        "Time",                 true,  true,  true,  false, false},
+    { displayTimeColorful,      "Time Colorful",        true,  true,  true,  false, false},
+    { displayTimeGradient,      "Time Gradient",        true,  true,  true,  false, false},
+    { displayTimeGradientLarge, "Time Gradient large",  true,  true,  true,  false, false},
+    { displayTimeRainbow,       "Time Rainbow",         true,  true,  true,  false, false},
 #endif
 
-#if DEVICE_TYPE == 3
-    { pride_Waves,            "Pride Waves",            true,  true,  true,  true,  true},
-    { pride_Rings,            "Pride Rings",            true,  true,  true,  true,  true},
-    { colorWaves_hori,        "Vertical Waves",         true,  true,  true,  true,  true},
-    { colorWaves_vert,        "Color Rings",            true,  true,  true,  true,  true},
-    { rainbow_vert,           "Vertical Rainbow",       true,  true,  true,  true,  true},
+#if DEVICE_TYPE == 3                                 // palet  speed  color  spark  twinkle
+    { pride_Waves,            "Pride Waves",            true,  true,  true,  false, false},
+    { pride_Rings,            "Pride Rings",            true,  true,  true,  false, false},
+    { colorWaves_hori,        "Vertical Waves",         true,  true,  true,  false, false},
+    { colorWaves_vert,        "Color Rings",            true,  true,  true,  false, false},
+    { rainbow_vert,           "Vertical Rainbow",       true,  true,  true,  false, false},
 #endif
 
-    // animation patterns
-    { pride,                  "Pride",                  true,  true,  true,  true,  true},
-    { colorWaves,             "Color Waves",            true,  true,  true,  true,  true},
-    { rainbow,                "Horizontal Rainbow",     true,  true,  true,  true,  true},
-    { rainbowSolid,           "Solid Rainbow",          true,  true,  true,  true,  true},
-    { confetti,               "Confetti",               true,  true,  true,  true,  true},
-    { sinelon,                "Sinelon",                true,  true,  true,  true,  true},
-    { bpm,                    "Beat",                   true,  true,  true,  true,  true},
-    { juggle,                 "Juggle",                 true,  true,  true,  true,  true},
-    { fire,                   "Fire",                   true,  true,  true,  true,  true},
-    { water,                  "Water",                  true,  true,  true,  true,  true},
-    { strobe,                 "Strobe",                 true,  true,  true,  true,  true},
-    { rainbow_strobe,         "Rainbow Strobe",         true,  true,  true,  true,  true},
-    { smooth_rainbow_strobe,  "Smooth Rainbow Strobe",  true,  true,  true,  true,  true},
+    // animation patterns                            // palet  speed  color  spark  twinkle
+    { pride,                  "Pride",                  false, false, false, false, false},
+    { colorWaves,             "Color Waves",            false, false, false, false, false},
+    { rainbow,                "Horizontal Rainbow",     false, false, false, false, false},
+    { rainbowSolid,           "Solid Rainbow",          false, false, false, false, false},
+    { confetti,               "Confetti",               false, false, false, false, false},
+    { sinelon,                "Sinelon",                true,  true,  false, false, false},
+    { bpm,                    "Beat",                   true,  true,  false, false, false},
+    { juggle,                 "Juggle",                 false, false, false, false, false},
+    { fire,                   "Fire",                   false, false, false, true,  false},
+    { water,                  "Water",                  false, false, false, true,  false},
+    { strobe,                 "Strobe",                 false, true,  true,  false, false},
+    { rainbow_strobe,         "Rainbow Strobe",         false, true,  false, false, false},
+    { smooth_rainbow_strobe,  "Smooth Rainbow Strobe",  false, true,  false, false, false},
 
-    // DigitalJohnson patterns
-    { rainbowRoll,            "Rainbow Roll",           true,  true,  true,  true,  true},
-    { rainbowBeat,            "Rainbow Beat",           true,  true,  true,  true,  true},
-    { randomPaletteFades,     "Palette Fades",          true,  true,  true,  true,  true},
-    { rainbowChase,           "Rainbow Chase",          true,  true,  true,  true,  true},
-    { randomDots,             "Rainbow Dots",           true,  true,  true,  true,  true},
-    { randomFades,            "Rainbow Fades",          true,  true,  true,  true,  true},
-    { policeLights,           "Police Lights",          true,  true,  true,  true,  true},
-    { glitter,                "Glitter",                true,  true,  true,  true,  true},
-    { snowFlakes,             "Snow Flakes",            true,  true,  true,  true,  true},
-    { lightning,              "Lightning",              true,  true,  true,  true,  true},
+    // DigitalJohnson patterns                       // palet  speed  color  spark  twinkle
+    { rainbowRoll,            "Rainbow Roll",           false, false, false, false, false},
+    { rainbowBeat,            "Rainbow Beat",           false, true,  false, false, false},
+    { randomPaletteFades,     "Palette Fades",          true,  false, false, false, false},
+    { rainbowChase,           "Rainbow Chase",          false, false, false, false, false},
+    { randomDots,             "Rainbow Dots",           false, false, false, false, false},
+    { randomFades,            "Rainbow Fades",          false, false, false, false, false},
+    { policeLights,           "Police Lights",          false, false, false, false, false},
+    { glitter,                "Glitter",                false, true,  false, false, false},
+    { snowFlakes,             "Snow Flakes",            false, false, false, false, false},
+    { lightning,              "Lightning",              false, false, false, false, false},
 
-    // twinkle patterns
-    { rainbowTwinkles,        "Rainbow Twinkles",       true,  true,  true,  true,  true},
-    { snowTwinkles,           "Snow Twinkles",          true,  true,  true,  true,  true},
-    { cloudTwinkles,          "Cloud Twinkles",         true,  true,  true,  true,  true},
-    { incandescentTwinkles,   "Incandescent Twinkles",  true,  true,  true,  true,  true},
+    // twinkle patterns                              // palet  speed  color  spark  twinkle
+    { rainbowTwinkles,        "Rainbow Twinkles",       false, false, false, false, false},
+    { snowTwinkles,           "Snow Twinkles",          false, false, false, false, false},
+    { cloudTwinkles,          "Cloud Twinkles",         false, false, false, false, false},
+    { incandescentTwinkles,   "Incandescent Twinkles",  false, false, false, false, false},
 
-    // TwinkleFOX patterns
-    { retroC9Twinkles,        "Retro C9 Twinkles",            true,  true,  true,  true,  true},
-    { redWhiteTwinkles,       "Red & White Twinkles",         true,  true,  true,  true,  true},
-    { blueWhiteTwinkles,      "Blue & White Twinkles",        true,  true,  true,  true,  true},
-    { redGreenWhiteTwinkles,  "Red, Green & White Twinkles",  true,  true,  true,  true,  true},
-    { fairyLightTwinkles,     "Fairy Light Twinkles",         true,  true,  true,  true,  true},
-    { snow2Twinkles,          "Snow 2 Twinkles",              true,  true,  true,  true,  true},
-    { hollyTwinkles,          "Holly Twinkles",               true,  true,  true,  true,  true},
-    { iceTwinkles,            "Ice Twinkles",                 true,  true,  true,  true,  true},
-    { partyTwinkles,          "Party Twinkles",               true,  true,  true,  true,  true},
-    { forestTwinkles,         "Forest Twinkles",              true,  true,  true,  true,  true},
-    { lavaTwinkles,           "Lava Twinkles",                true,  true,  true,  true,  true},
-    { fireTwinkles,           "Fire Twinkles",                true,  true,  true,  true,  true},
-    { cloud2Twinkles,         "Cloud 2 Twinkles",             true,  true,  true,  true,  true},
-    { oceanTwinkles,          "Ocean Twinkles",               true,  true,  true,  true,  true},
+    // TwinkleFOX patterns                                 // palet  speed  color  spark  twinkle
+    { retroC9Twinkles,        "Retro C9 Twinkles",            false, false, false, false, true},
+    { redWhiteTwinkles,       "Red & White Twinkles",         false, false, false, false, true},
+    { blueWhiteTwinkles,      "Blue & White Twinkles",        false, false, false, false, true},
+    { redGreenWhiteTwinkles,  "Red, Green & White Twinkles",  false, false, false, false, true},
+    { fairyLightTwinkles,     "Fairy Light Twinkles",         false, false, false, false, true},
+    { snow2Twinkles,          "Snow 2 Twinkles",              false, false, false, false, true},
+    { hollyTwinkles,          "Holly Twinkles",               false, false, false, false, true},
+    { iceTwinkles,            "Ice Twinkles",                 false, false, false, false, true},
+    { partyTwinkles,          "Party Twinkles",               false, false, false, false, true},
+    { forestTwinkles,         "Forest Twinkles",              false, false, false, false, true},
+    { lavaTwinkles,           "Lava Twinkles",                false, false, false, false, true},
+    { fireTwinkles,           "Fire Twinkles",                false, false, false, false, true},
+    { cloud2Twinkles,         "Cloud 2 Twinkles",             false, false, false, false, true},
+    { oceanTwinkles,          "Ocean Twinkles",               false, false, false, false, true},
 
 #ifndef REMOVE_VISUALIZATION
     // Visualization Patterns
-#if DEVICE_TYPE == 1                      // Matrix
-    { RainbowVisualizer,                  "Rainbow Visualization",              true,  true,  true,  true,  true},
-    { SingleColorVisualizer,              "Single Color Visualization",         true,  true,  true,  true,  true},
-    { RainbowVisualizerDoubleSided,       "Rainbow Visualization Outside",      true,  true,  true,  true,  true},
-    { SingleColorVisualizerDoubleSided,   "Single Color Visualization Outside"  true,  true,  true,  true,  true},
+#if DEVICE_TYPE == 1                      // Matrix                          // palet  speed  color  spark  twinkle
+    { RainbowVisualizer,                  "Rainbow Visualization",              true,  true,  true,  false, false},
+    { SingleColorVisualizer,              "Single Color Visualization",         true,  true,  true,  false, false},
+    { RainbowVisualizerDoubleSided,       "Rainbow Visualization Outside",      true,  true,  true,  false, false},
+    { SingleColorVisualizerDoubleSided,   "Single Color Visualization Outside"  true,  true,  true,  false, false},
     
     #ifdef AddLogoVisualizers
         #if LENGTH == 32 && HEIGHT == 8   // Logo Visualizers
-      { HbzVisualizerRainbow,             "Hbz Visualizer Spectrum",            true,  true,  true,  true,  true},
-        { HbzVisualizerWhite,             "Hbz Visualizer",                     true,  true,  true,  true,  true},
+      { HbzVisualizerRainbow,             "Hbz Visualizer Spectrum",            true,  true,  true,  false, false},
+        { HbzVisualizerWhite,             "Hbz Visualizer",                     true,  true,  true,  false, false},
         #endif
     #endif
 #endif
 
-  #ifdef DEVICE_TYPE            // Generic Visualization Patterns
-    { vuMeterSolid,                 "Solid Volume Visualizer",                      true,  true,  true,  true,  true},
-    { vuMeterStaticRainbow,         "Static Rainbow Volume Visualizer",             true,  true,  true,  true,  true},
-    { vuMeterRainbow,               "Flowing Rainbow Volume Visualizer",            true,  true,  true,  true,  true},
-    { vuMeterTriColor,              "Tri-Color Volume Visualizer",                  true,  true,  true,  true,  true},
-    { RefreshingVisualizer,         "Wave Visualizer",                              true,  true,  true,  true,  true},
-    { CentralVisualizer,            "Center Visualizer",                            true,  true,  true,  true,  true},
-    { SolidColorDualTone,           "Solid-Color Pair Bullet Visualizer",           true,  true,  true,  true,  true},
-    { SolidColorComplementary,      "Solid-Color Complementary Bullet Visualizer",  true,  true,  true,  true,  true},
-    { BluePurpleBullets,            "Blue/Purple Bullet Visualizer",                true,  true,  true,  true,  true},
-    { BulletVisualizer,             "Beat-Bullet Visualization",                    true,  true,  true,  true,  true},
+  #ifdef DEVICE_TYPE            // Generic Visualization Patterns                // palet  speed  color  spark  twinkle
+    { vuMeterSolid,                 "Solid Volume Visualizer",                      true,  true,  true,  false, false},
+    { vuMeterStaticRainbow,         "Static Rainbow Volume Visualizer",             true,  true,  true,  false, false},
+    { vuMeterRainbow,               "Flowing Rainbow Volume Visualizer",            true,  true,  true,  false, false},
+    { vuMeterTriColor,              "Tri-Color Volume Visualizer",                  true,  true,  true,  false, false},
+    { RefreshingVisualizer,         "Wave Visualizer",                              true,  true,  true,  false, false},
+    { CentralVisualizer,            "Center Visualizer",                            true,  true,  true,  false, false},
+    { SolidColorDualTone,           "Solid-Color Pair Bullet Visualizer",           true,  true,  true,  false, false},
+    { SolidColorComplementary,      "Solid-Color Complementary Bullet Visualizer",  true,  true,  true,  false, false},
+    { BluePurpleBullets,            "Blue/Purple Bullet Visualizer",                true,  true,  true,  false, false},
+    { BulletVisualizer,             "Beat-Bullet Visualization",                    true,  true,  true,  false, false},
     //{ RainbowPeaks,                 "Rainbow Peak Visualizer"},                     // broken
-    { RainbowBassRings,             "Bass Ring Visualizer",                         true,  true,  true,  true,  true},
-    { RainbowKickRings,             "Kick Ring Visualizer",                         true,  true,  true,  true,  true},
+    { RainbowBassRings,             "Bass Ring Visualizer",                         true,  true,  true,  false, false},
+    { RainbowKickRings,             "Kick Ring Visualizer",                         true,  true,  true,  false, false},
     //{ TrailingBulletsVisualizer,    "Trailing Bullet Visualization"},               // obsolete
     //{ BrightnessVisualizer,         "Brightness Visualizer"},                       // broken
-    { RainbowBandVisualizer,        "Rainbow Band Visualizer",                      true,  true,  true,  true,  true},
-    { SingleColorBandVisualizer,    "Single Color Band Visualizer",                 true,  true,  true,  true,  true},
+    { RainbowBandVisualizer,        "Rainbow Band Visualizer",                      true,  true,  true,  false, false},
+    { SingleColorBandVisualizer,    "Single Color Band Visualizer",                 true,  true,  true,  false, false},
   #endif
 
 #endif
 
-#if DEVICE_TYPE == 4
-    { NanoleafWaves,                "Nanoleaf Wave Visualizer",               true,  true,  true,  true,  true},
-    { NanoleafBand,                 "Nanoleaf Rainbow Band Visualizer",       true,  true,  true,  true,  true},
-    { NanoleafSingleBand,           "Nanoleaf Solid Color Band Visualizer",   true,  true,  true,  true,  true},
+#if DEVICE_TYPE == 4                                                       // palet  speed  color  spark  twinkle
+    { NanoleafWaves,                "Nanoleaf Wave Visualizer",               true,  true,  true,  false, false},
+    { NanoleafBand,                 "Nanoleaf Rainbow Band Visualizer",       true,  true,  true,  false, false},
+    { NanoleafSingleBand,           "Nanoleaf Solid Color Band Visualizer",   true,  true,  true,  false, false},
 #endif
 
-  #ifdef ENABLE_SERIAL_AMBILIGHT
-    { ambilight,                    "⋆Serial Ambilight",  true,  true,  true,  true,  true},
+  #ifdef ENABLE_SERIAL_AMBILIGHT                       // palet  speed  color  spark  twinkle
+    { ambilight,                    "⋆Serial Ambilight",  true,  true,  true,  false, false},
   #endif // ENABLE_SERIAL_AMBILIGHT
 #ifdef SOUND_SENSOR_SUPPORT
-    { soundReactive,                "Sound Reactive",     true,  true,  true,  true,  true},
+    { soundReactive,                "Sound Reactive",     true,  true,  true,  false, false},
 #endif
 
-    { showSolidColor,               "Solid Color",        true,  true,  true,  true,  true}
+    { showSolidColor,               "Solid Color",        false, false, true,  false, false}
 };
 
 
