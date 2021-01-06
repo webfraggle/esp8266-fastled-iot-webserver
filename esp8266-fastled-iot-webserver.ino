@@ -962,52 +962,41 @@ void setup() {
     addRebootPage(0);
 #endif
 
-    webServer.on("/all", HTTP_GET, []() {
+    webServer.on("/config.json", HTTP_GET, []() {
         String json = getFieldsJson(fields, fieldCount);
         json += ",{\"name\":\"lines\",\"label\":\"Amount of Lines for the Visualizer\",\"type\":\"String\",\"value\":";
         json += PACKET_LENGTH;
         json += "}";
-        json += ",{\"name\":\"hostname\",\"label\":\"Name of the device\",\"type\":\"Setting\",\"value\":\"";
-        json += cfg.hostname;
-        json += "\"}";
-        json += ",{\"name\":\"otaSupport\",\"label\":\"Device supports OTA\",\"type\":\"Setting\",\"value\":";
+        json += ",{\"name\":\"settings\",\"label\":\"Device settings\",\"type\":\"Setting\",\"value\":";
+        json += "{\"deviceHostname\":\"" + String(cfg.hostname) + "\"";
+        json += ",\"otaSupport\":";
 #ifdef ENABLE_OTA_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
-        json += ",{\"name\":\"alexaSupport\",\"label\":\"Device supports Alexa\",\"type\":\"Setting\",\"value\":";
+        json += ", \"alexaSupport\":";
 #ifdef ENABLE_ALEXA_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
-        json += ",{\"name\":\"mqttSupport\",\"label\":\"Device supports MQTT\",\"type\":\"Setting\",\"value\":";
+        json += ", \"mqttSupport\":";
 #ifdef ENABLE_MQTT_SUPPORT
         json += "true";
 #else
         json += "false";
 #endif
-        json += "}";
 #ifdef ENABLE_MQTT_SUPPORT
-        json += ",{\"name\":\"mqttSettings\",\"label\":\"MQTT Settings\",\"type\":\"Setting\",\"enabled\":";
-        json += cfg.MQTTEnabled;
-        json += ",\"hostname\":\"";
-        json += cfg.MQTTHost;
-        json += "\",\"port\":";
-        json += cfg.MQTTPort;
-        json += ",\"username\":\"";
-        json += cfg.MQTTUser;
-        json += "\",\"topic\":\"";
-        json += cfg.MQTTTopic;
-        json += "\",\"devicename\":\"";
-        json += cfg.MQTTDeviceName;
-        json += "\"}";
+        json += ",\"mqttEnabled\":" + String(cfg.MQTTEnabled);
+        json += ",\"mqttHostname\":\"" + String(cfg.MQTTHost) + "\"";
+        json += ",\"mqttPort\":\"" + String(cfg.MQTTPort) + "\"";
+        json += ",\"mqttUsername\":\"" + String(cfg.MQTTUser) + "\"";
+        json += ",\"mqttTopic\":\"" + String(cfg.MQTTTopic) + "\"";
+        json += ",\"mqttDevicename\":\"" + String(cfg.MQTTDeviceName) + "\"";
 #endif
-        json += "]";
-        webServer.send(200, "text/json", json);
+        json += "}}]";
+        webServer.send(200, "application/json", json);
         });
 
     webServer.on("/settings", HTTP_POST, []() {
