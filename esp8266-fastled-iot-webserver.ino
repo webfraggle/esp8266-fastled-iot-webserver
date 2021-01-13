@@ -640,7 +640,7 @@ void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
     cfg.red = r;
     cfg.green = g;
     cfg.blue = b;
-    save_config = true;
+    setConfigChanged();
 
     if (updatePattern && currentPatternIndex != patternCount - 2)setPattern(patternCount - 1);
 
@@ -1035,7 +1035,7 @@ void setup() {
 
         if (cfg.MQTTEnabled != mqtt_enabled) {
             cfg.MQTTEnabled = mqtt_enabled;
-            save_config = true;
+            setConfigChanged();
         }
         if (cfg.MQTTPort != mqtt_port) {
             cfg.MQTTPort = mqtt_port;
@@ -1423,10 +1423,8 @@ void loop() {
     //FastLED.delay(1000 / FRAMES_PER_SECOND);
     delay(1000 / FRAMES_PER_SECOND);
 
-    // save config changes only every 10 seconds
-    EVERY_N_SECONDS(10) {
-        saveConfig(save_config);
-    }
+    // call to save config if config has changed
+    saveConfig();
 }
 
 void loadConfig()
@@ -1471,7 +1469,7 @@ void loadConfig()
 
     if (!isValidHostname(cfg.hostname, sizeof(cfg.hostname))) {
         strncpy(cfg.hostname, DEFAULT_HOSTNAME, sizeof(cfg.hostname));
-        save_config = true;
+        setConfigChanged();
     }
 
 #ifdef ENABLE_MQTT_SUPPORT
@@ -1484,7 +1482,7 @@ void loadConfig()
         strncpy(cfg.MQTTPass, MQTT_PASS, sizeof(cfg.MQTTPass));
         strncpy(cfg.MQTTTopic, MQTT_TOPIC, sizeof(cfg.MQTTTopic));
         strncpy(cfg.MQTTDeviceName, MQTT_DEVICE_NAME, sizeof(cfg.MQTTDeviceName));
-        save_config = true;
+        setConfigChanged();
     }
 #endif
 }
@@ -1514,7 +1512,7 @@ void setPower(uint8_t value)
     power = value == 0 ? 0 : 1;
 
     cfg.power = power;
-    save_config = true;
+    setConfigChanged();
 
     broadcastInt("power", power);
 }
@@ -1524,7 +1522,7 @@ void setAutoplay(uint8_t value)
     autoplay = value == 0 ? 0 : 1;
 
     cfg.autoplay = autoplay;
-    save_config = true;
+    setConfigChanged();
 
     broadcastInt("autoplay", autoplay);
 }
@@ -1534,7 +1532,7 @@ void setAutoplayDuration(uint8_t value)
     autoplayDuration = value;
 
     cfg.autoplayDuration = autoplayDuration;
-    save_config = true;
+    setConfigChanged();
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
 
@@ -1577,7 +1575,7 @@ void adjustPattern(bool up)
 
     if (autoplay == 0) {
         cfg.currentPatternIndex = currentPatternIndex;
-        save_config = true;
+        setConfigChanged();
     }
 
 #ifdef AUTOPLAY_IGNORE_UDP_PATTERNS
@@ -1600,7 +1598,7 @@ void setPattern(uint8_t value)
 
     if (autoplay != 1) {
         cfg.currentPatternIndex = currentPatternIndex;
-        save_config = true;
+        setConfigChanged();
     }
 
     broadcastInt("pattern", currentPatternIndex);
@@ -1625,7 +1623,7 @@ void setPalette(uint8_t value)
     currentPaletteIndex = value;
 
     cfg.currentPaletteIndex = currentPaletteIndex;
-    save_config = true;
+    setConfigChanged();
 
     broadcastInt("palette", currentPaletteIndex);
 }
@@ -1661,7 +1659,7 @@ void setBrightness(uint8_t value)
     FastLED.setBrightness(brightness);
 
     cfg.brightness = brightness;
-    save_config = true;
+    setConfigChanged();
 
     broadcastInt("brightness", brightness);
 }
@@ -1675,7 +1673,7 @@ void setSpeed(uint8_t value)
     speed = value;
 
     cfg.speed = speed;
-    save_config = true;
+    setConfigChanged();
 
     broadcastInt("speed", speed);
 }
