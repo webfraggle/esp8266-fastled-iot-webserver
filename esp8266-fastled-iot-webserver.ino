@@ -516,7 +516,7 @@ PatternAndNameList patterns = {
     { randomDots,             "Rainbow Dots",           false, false, false, false, false},
     { randomFades,            "Rainbow Fades",          false, false, false, false, false},
     { policeLights,           "Police Lights",          false, false, false, false, false},
-    { glitter,                "Glitter",                false, true,  false, false, false},
+    { glitter,                "Glitter",                false, false, false, false, false},
     { snowFlakes,             "Snow Flakes",            false, false, false, false, false},
     { lightning,              "Lightning",              false, false, false, false, false},
 
@@ -2213,7 +2213,8 @@ void glitter()
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
-    FastLED.delay(255 - speed);
+    //fixme: do not slow down the whole loop
+    //FastLED.delay(255 - speed);
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
