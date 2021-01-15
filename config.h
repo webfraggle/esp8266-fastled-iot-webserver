@@ -34,6 +34,7 @@ bool save_config = false;
 void saveConfig(bool save) {
     // Save configuration from RAM into EEPROM
     if (save == true) {
+        SERIAL_DEBUG_LN(F("Saving Config"))
         EEPROM.begin(4095);
         EEPROM.put(0, cfg );
         delay(200);

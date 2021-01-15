@@ -67,6 +67,8 @@ extern "C" {
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
+
+#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
 /*
     0: Generic LED-Strip: a regular LED-Strip without any special arrangement (and Infinity Mirror + Bottle Lighting Pad)
         * Easiest: 5V WS2812B LED-Strip:            https://s.click.aliexpress.com/e/_dZ1hCJ7
@@ -306,6 +308,14 @@ if you have connected the ring first it should look like this: const int twpOffs
 \___/ \____//_/|_//_/  /___/ \___/   /___//_/|_//____/ 
 -----------------------------------------------------------------------------------------------------------//
 ###########################################################################################################*/
+
+// define debugging MACROS
+#define SERIAL_DEBUG_ADD(s) if (LED_DEBUG != 0) { Serial.print(s); }
+#define SERIAL_DEBUG_ADDF(format, ...) if (LED_DEBUG != 0) { Serial.printf(format, __VA_ARGS__); }
+#define SERIAL_DEBUG_EOL if (LED_DEBUG != 0) { Serial.print("\n"); }
+#define SERIAL_DEBUG_BOL if (LED_DEBUG != 0) { Serial.printf("DEBUG [%lu]: ", millis()); }
+#define SERIAL_DEBUG_LN(s) SERIAL_DEBUG_BOL SERIAL_DEBUG_ADD(s) SERIAL_DEBUG_EOL
+#define SERIAL_DEBUG_LNF(format, ...) SERIAL_DEBUG_BOL SERIAL_DEBUG_ADDF(format, __VA_ARGS__) SERIAL_DEBUG_EOL
 
 #ifdef DEVICE_TYPE
 #include <WiFiUdp.h>
@@ -644,6 +654,7 @@ void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
 
     if (updatePattern && currentPatternIndex != patternCount - 2)setPattern(patternCount - 1);
 
+    SERIAL_DEBUG_LNF("Setting: solid Color: red %d, green %d, blue %d", r, g ,b)
     broadcastString("color", String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
 }
 
@@ -725,7 +736,7 @@ void setup() {
     Serial.begin(115200);
 
     delay(100);
-    Serial.setDebugOutput(true);
+    Serial.print("\n\n");
 
 #if LED_TYPE == WS2812 || LED_TYPE == WS2812B || LED_TYPE == WS2811 || LED_TYPE == WS2813 || LED_TYPE == NEOPIXEL
     FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);         // WS2812 (Neopixel)
@@ -757,7 +768,7 @@ void setup() {
 
     //  irReceiver.enableIRIn(); // Start the receiver
 
-    Serial.println();
+    #if LED_DEBUG != 0
     Serial.print(F("Heap: ")); Serial.println(system_get_free_heap_size());
     Serial.print(F("Boot Vers: ")); Serial.println(system_get_boot_version());
     Serial.print(F("CPU: ")); Serial.println(system_get_cpu_freq());
@@ -767,6 +778,7 @@ void setup() {
     Serial.print(F("Flash Size: ")); Serial.println(ESP.getFlashChipRealSize());
     Serial.print(F("Vcc: ")); Serial.println(ESP.getVcc());
     Serial.println();
+    #endif
 
 #ifdef SOUND_REACTIVE
 #if SENSOR_TYPE == 0
@@ -774,20 +786,13 @@ void setup() {
 #endif
 #endif // SOUND_REACTIVE
 
-
-    SPIFFS.begin();
-    {
-        Serial.println("SPIFFS contents:");
-
-        Dir dir = SPIFFS.openDir("/");
-        while (dir.next()) {
-            String fileName = dir.fileName();
-            size_t fileSize = dir.fileSize();
-            Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), String(fileSize).c_str());
-        }
-        Serial.printf("\n");
+    // starting file system
+    if (!SPIFFS.begin ()) {
+        Serial.println(F("An Error has occurred while mounting SPIFFS"));
+        return;
     }
 
+    // setting up Wifi
     uint8_t mac[WL_MAC_ADDR_LENGTH];
     WiFi.softAPmacAddress(mac);
     String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
@@ -802,17 +807,62 @@ void setup() {
     wifiManager.setHostname(cfg.hostname);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.setSaveConfigCallback(handleReboot);
+    #if LED_DEBUG != 0
+        wifiManager.setDebugOutput(true);
+    #else
+        wifiManager.setDebugOutput(false);
+    #endif
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
     if (wifiManager.autoConnect(nameChar)) {
-        Serial.println("Wi-Fi connected");
+        Serial.println("INFO: Wi-Fi connected");
     } else {
-        Serial.println("Wi-Fi manager portal running");
+        Serial.println("INFO: Wi-Fi manager portal running");
     }
 
-#ifdef ENABLE_OTA_SUPPORT
+    // FS debug information
+    // THIS NEEDS TO BE PAST THE WIFI SETUP!! OTHERWISE WIFI SETUP WILL BE DELAYED
+    #if LED_DEBUG != 0
+        SERIAL_DEBUG_LN(F("SPIFFS contents:"))
+        Dir dir = SPIFFS.openDir("/");
+        while (dir.next()) {
+            SERIAL_DEBUG_LNF("FS File: %s, size: %lu", dir.fileName().c_str(), dir.fileSize())
+        }
+        SERIAL_DEBUG_EOL
+        FSInfo fs_info;
+        SPIFFS.info(fs_info);
+        SERIAL_DEBUG_LNF("FS Size: %luKB, used: %luKB, %0.2f%%", \
+                          fs_info.totalBytes, fs_info.usedBytes, \
+                          (float) 100 / fs_info.totalBytes * fs_info.usedBytes)
+        SERIAL_DEBUG_EOL
+    #endif
 
+    SERIAL_DEBUG_LN(F("Enabled Features:"))
+    #ifdef ENABLE_MULTICAST_DNS
+        SERIAL_DEBUG_LN(F("Feature: mDNS support enabled"))
+    #endif
+    #ifdef ENABLE_OTA_SUPPORT
+        SERIAL_DEBUG_LN(F("Feature: OTA support enabled"))
+    #endif
+    #ifdef ENABLE_ALEXA_SUPPORT
+        SERIAL_DEBUG_LN(F("Feature: Alexa support enabled"))
+    #endif
+    #ifdef SOUND_SENSOR_SUPPORT
+        SERIAL_DEBUG_LN(F("Feature: Sound sensor support enabled"))
+    #endif
+    #ifdef ENABLE_MQTT_SUPPORT
+        SERIAL_DEBUG_LN(F("Feature: MQTT support enabled"))
+    #endif
+    #ifdef ENABLE_SERIAL_AMBILIGHT
+        SERIAL_DEBUG_LN(F("Feature: Serial ambilight support enabled"))
+    #endif
+    #ifndef REMOVE_VISUALIZATION
+        SERIAL_DEBUG_LN(F("Feature: UDP visualization support enabled"))
+    #endif
+    SERIAL_DEBUG_EOL
+
+#ifdef ENABLE_OTA_SUPPORT
 
     webServer.on("/ota", HTTP_GET, []() {
         IPAddress ip = WiFi.localIP();
@@ -1063,6 +1113,7 @@ void setup() {
         }
 #endif
         if (force_restart) {
+            SERIAL_DEBUG_LN("Saving settings and rebooting...")
             saveConfig(true);
             handleReboot();
         } else {
@@ -1075,11 +1126,13 @@ void setup() {
         // delete EEPROM settings
         if (webServer.arg("type") == String("all")) {
             resetConfig();
+            SERIAL_DEBUG_LN("Resetting config")
         }
 
         // delete wireless config
         if (webServer.arg("type") == String("wifi") || webServer.arg("type") == String("all")) {
             setWiFiConf(String(""), String(""));
+            SERIAL_DEBUG_LN("Resetting wifi settings");
         }
         webServer.send(200, "text/html", "<html><head></head><body><font face='arial'><b><h2>Config reset finished. Device is rebooting now and you need to connect to the wireless again.</h2></b></font></body></html>");
         delay(500);
@@ -1229,7 +1282,7 @@ void setup() {
     webServer.begin();
 #endif
 
-    Serial.println("HTTP web server started");
+    Serial.println("INFO: HTTP web server started");
 
 #if DEVICE_TYPE == 2
     bool sucess = false;
@@ -1294,19 +1347,19 @@ void loop() {
     static bool hasConnected = false;
     EVERY_N_SECONDS(1) {
         if (wifiManager.getLastConxResult() != WL_CONNECTED) {
-            //      Serial.printf("Connecting to %s\n", ssid);
+            SERIAL_DEBUG_LN("Trying to connect to Wifi")
             hasConnected = false;
         }
         else if (!hasConnected) {
             hasConnected = true;
-            Serial.print("Connected! Open http://");
+            Serial.print("INFO: WiFi Connected! Open http://");
             Serial.print(WiFi.localIP());
             Serial.println(" in your browser");
 #ifdef ENABLE_MULTICAST_DNS
             if (!MDNS.begin(cfg.hostname)) {
-                Serial.println("\nError while setting up MDNS responder! \n");
+                Serial.println("\nERROR: problem while setting up MDNS responder! \n");
             } else {
-                Serial.println("mDNS responder started");
+                Serial.printf("INFO: mDNS responder started. Try to open http://%s.local in your browser\n", cfg.hostname);
                 MDNS.addService("http", "tcp", 80);
             }
 #endif
@@ -1329,12 +1382,12 @@ void loop() {
         }
         if (!mqttConnected && cfg.MQTTEnabled != 0) {
             mqttConnected = true;
-            Serial.println("Connecting to MQTT...");
+            SERIAL_DEBUG_LN("Connecting to MQTT...");
             if (mqttClient.connect(cfg.hostname, cfg.MQTTUser, cfg.MQTTPass)) {
                 mqttClient.setKeepAlive(10);
-                Serial.println("connected \n");
+                SERIAL_DEBUG_LN("connected \n")
 
-                Serial.println("Subscribing to MQTT Topics \n");
+                SERIAL_DEBUG_LN("Subscribing to MQTT Topics \n");
                 mqttClient.subscribe(MQTT_TOPIC MQTT_TOPIC_SET);
 
                 DynamicJsonDocument JSONencoder(4096);
@@ -1358,23 +1411,20 @@ void loop() {
                 }
                 size_t n = measureJson(JSONencoder);
                 if (mqttClient.beginPublish(MQTT_TOPIC "/config", n, true) == true) {
-                    Serial.println("Configuration Publishing Begun");
-                    if (serializeJson(JSONencoder, mqttClient) == n){
-                         Serial.println("Configuration Sent");
+                    SERIAL_DEBUG_LN("Configuration Publishing Begun")
+                    if (serializeJson(JSONencoder, mqttClient) == n) {
+                         SERIAL_DEBUG_LN("Configuration Sent")
                     }
                     if (mqttClient.endPublish() == true) {
-                        Serial.println("Configuration Publishing Finished");
+                        SERIAL_DEBUG_LN("Configuration Publishing Finished")
                         sendStatus();
-                        Serial.println("Sending Initial Status");
+                        SERIAL_DEBUG_LN("Sending Initial Status")
                     }
+                } else {
+                    SERIAL_DEBUG_LN("Error sending Configuration")
                 }
-                else {
-                    Serial.println("Error sending Configuration");
-                }
-            }
-            else {
-                Serial.print("failed with state ");
-                Serial.print(mqttClient.state());
+            } else {
+                SERIAL_DEBUG_LNF("failed with state %s", mqttClient.state())
             }
         }
     }
@@ -1391,9 +1441,9 @@ void loop() {
         return;
     }
 
-    // EVERY_N_SECONDS(10) {
-    //   Serial.print( F("Heap: ") ); Serial.println(system_get_free_heap_size());
-    // }
+    EVERY_N_SECONDS(10) {
+      SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
+    }
 
     // change to a new cpt-city gradient palette
     EVERY_N_SECONDS(secondsPerPalette) {
@@ -1431,6 +1481,9 @@ void loop() {
 
 void loadConfig()
 {
+
+    SERIAL_DEBUG_LN(F("Loading config"))
+
     // Loads configuration from EEPROM into RAM
     EEPROM.begin(4095);
     EEPROM.get(0, cfg );
@@ -1448,11 +1501,7 @@ void loadConfig()
     byte g = cfg.green;
     byte b = cfg.blue;
 
-    if (r == 0 && g == 0 && b == 0)
-    {
-    }
-    else
-    {
+    if (r != 0 && g != 0 && b != 0) {
         solidColor = CRGB(r, g, b);
     }
 
@@ -1515,7 +1564,7 @@ void setPower(uint8_t value)
 
     cfg.power = power;
     save_config = true;
-
+    SERIAL_DEBUG_LNF("Setting: power %s", (power == 0) ? "off" : "on")
     broadcastInt("power", power);
 }
 
@@ -1525,7 +1574,7 @@ void setAutoplay(uint8_t value)
 
     cfg.autoplay = autoplay;
     save_config = true;
-
+    SERIAL_DEBUG_LNF("Setting: autoplay %s", (autoplay == 0) ? "off" : "on")
     broadcastInt("autoplay", autoplay);
 }
 
@@ -1537,7 +1586,7 @@ void setAutoplayDuration(uint8_t value)
     save_config = true;
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
-
+    SERIAL_DEBUG_LNF("Setting: autoplay duration: %d seconds", autoplayDuration)
     broadcastInt("autoplayDuration", autoplayDuration);
 }
 
@@ -1553,7 +1602,7 @@ void adjustPattern(bool up)
         while (currentPatternIndex == lastpattern)
         {
             uint8_t newpattern = random8(0, patternCount - 1);
-            if (newpattern != lastpattern)currentPatternIndex = newpattern;
+            if (newpattern != lastpattern) currentPatternIndex = newpattern;
         }
     }
 #else // RANDOM_AUTOPLAY_PATTERN
@@ -1588,6 +1637,8 @@ void adjustPattern(bool up)
     }
 #endif
 
+    SERIAL_DEBUG_LNF("Setting: pattern: %s", patterns[currentPatternIndex].name.c_str())
+
     broadcastInt("pattern", currentPatternIndex);
 }
 
@@ -1603,6 +1654,7 @@ void setPattern(uint8_t value)
         save_config = true;
     }
 
+    SERIAL_DEBUG_LNF("Setting: pattern: %s", patterns[currentPatternIndex].name.c_str())
     broadcastInt("pattern", currentPatternIndex);
 }
 
@@ -1627,6 +1679,7 @@ void setPalette(uint8_t value)
     cfg.currentPaletteIndex = currentPaletteIndex;
     save_config = true;
 
+    SERIAL_DEBUG_LNF("Setting: pallette: %s", paletteNames[currentPaletteIndex].c_str())
     broadcastInt("palette", currentPaletteIndex);
 }
 
@@ -1662,7 +1715,7 @@ void setBrightness(uint8_t value)
 
     cfg.brightness = brightness;
     save_config = true;
-
+    SERIAL_DEBUG_LNF("Setting: brightness: %d", brightness)
     broadcastInt("brightness", brightness);
 }
 
@@ -1676,7 +1729,7 @@ void setSpeed(uint8_t value)
 
     cfg.speed = speed;
     save_config = true;
-
+    SERIAL_DEBUG_LNF("Setting: speed: %d", speed)
     broadcastInt("speed", speed);
 }
 
@@ -2491,7 +2544,7 @@ void rainbow_vert()
 #if DEVICE_TYPE == 2
 unsigned long sendNTPpacket(IPAddress& address)
 {
-    //Serial.println("sending NTP packet...");
+    SERIAL_DEBUG_LN(F("sending NTP packet..."))
     // set all bytes in the buffer to 0
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
     // Initialize values needed to form NTP request
@@ -2538,8 +2591,7 @@ bool GetTime()
         return false;
     }
     else {
-        //Serial.print("packet received, length=");
-        //Serial.println(cb);
+        SERIAL_DEBUG_LNF("packet received, length=%lu", cb)
         udpTime.read(packetBuffer, NTP_PACKET_SIZE);
         ntp_timestamp = millis();
 
@@ -2556,7 +2608,7 @@ bool GetTime()
         mins = (epoch % 3600) / 60;
         secs = (epoch % 60);
 
-        Serial.println("Requesting time");
+        Serial.println("INFO: Requesting time");
 
         PrintTime();
         return true;
@@ -2864,16 +2916,16 @@ bool parseUdp()
     {
         nopackage = 0;
         // receive incoming UDP packets
-        //Serial.printf("Received %d bytes from %s, port %d\n", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
+        SERIAL_DEBUG_LNF("Received %d bytes from %s, port %d", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort())
         int len = Udp.readBytes(incomingPacket, PACKET_LENGTH);
         if (len > 0)
         {
             incomingPacket[len] = '\0';
         }
-        //Serial.printf("UDP packet contents: %s\n", incomingPacket);
-        //Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", incomingPacket[0], incomingPacket[1], incomingPacket[2], incomingPacket[3], incomingPacket[4], incomingPacket[5], incomingPacket[6], incomingPacket[7], incomingPacket[8], incomingPacket[9], incomingPacket[10], incomingPacket[11], incomingPacket[12], incomingPacket[13], incomingPacket[14], incomingPacket[15]);
+        SERIAL_DEBUG_LNF("UDP packet contents: %s", incomingPacket)
+        SERIAL_DEBUG_LNF("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d", incomingPacket[0], incomingPacket[1], incomingPacket[2], incomingPacket[3], incomingPacket[4], incomingPacket[5], incomingPacket[6], incomingPacket[7], incomingPacket[8], incomingPacket[9], incomingPacket[10], incomingPacket[11], incomingPacket[12], incomingPacket[13], incomingPacket[14], incomingPacket[15])
         //Serial.println(incomingPacket);
-      //PrintBar();
+        //PrintBar();
         return true;
     }
     else return false;
@@ -2887,13 +2939,13 @@ int getVolume(uint8_t vals[], int start, int end, double factor)
     double result = 0;
     int iter = 0;
     int cnt = 0;
-    //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
+    SERIAL_DEBUG_LNF("Nr: %d, %d, start: %d, end: %d", iter, vals[iter], start, end)
     for (iter = start; iter <= end && vals[iter] != '\0'; iter++)
     {
-        //Serial.printf("Nr: %d, %d, start: %d, end: %d\n", iter, vals[iter], start, end);
+        SERIAL_DEBUG_LNF("Nr: %d, %d, start: %d, end: %d", iter, vals[iter], start, end)
         result += ((double)vals[iter]*factor)/(end-start + 1);
     }
-    //Serial.println(result);
+    SERIAL_DEBUG_LNF("Result: %f", result)
     if (result <= 1) result = 0;
     if (result > 255)result = 255;
     return result;
@@ -4068,7 +4120,11 @@ void ambilight() {
 void mainAlexaEvent(EspalexaDevice* d) {
     if (d == nullptr) return;
 
-    Serial.print("Alexa update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #endif
+
     if (d->getValue() == 0)setPower(0); else {
         setPower(1);
         setBrightness(d->getValue());
@@ -4090,7 +4146,10 @@ void mainAlexaEvent(EspalexaDevice* d) {
 void AlexaStrobeEvent(EspalexaDevice* d) {
     if (d == nullptr) return;
 
-    Serial.print("Alexa Strobe update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Strobe update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #endif
     if (d->getValue() == 0)setPattern(patternCount - 1); else {
         if (d->getValue() == 255)
         {
@@ -4117,7 +4176,10 @@ void AlexaStrobeEvent(EspalexaDevice* d) {
 #ifdef AddAutoplayDevice
 void AlexaAutoplayEvent(EspalexaDevice* d) {
     if (d == nullptr) return;
-    Serial.print("Alexa Autoplay update: state: "); Serial.println(d->getPercent());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Autoplay update: state: "); Serial.println(d->getPercent());
+    #endif
     if (d->getValue() > 0)
     {
         setAutoplay(1);
@@ -4129,7 +4191,10 @@ void AlexaAutoplayEvent(EspalexaDevice* d) {
 #ifdef AddSpecificPatternDeviceA
 void AlexaSpecificEventA(EspalexaDevice* d) {
     if (d == nullptr) return;
-    Serial.print("Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #endif
     if (d->getValue() != 0)setPattern(SpecificPatternA);
     else setPattern(patternCount - 1);
 }
@@ -4137,7 +4202,10 @@ void AlexaSpecificEventA(EspalexaDevice* d) {
 #ifdef AddSpecificPatternDeviceB
 void AlexaSpecificEventB(EspalexaDevice* d) {
     if (d == nullptr) return;
-    Serial.print("Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #endif
     if (d->getValue() != 0)setPattern(SpecificPatternB);
     else setPattern(patternCount - 1);
 }
@@ -4145,7 +4213,10 @@ void AlexaSpecificEventB(EspalexaDevice* d) {
 #ifdef AddSpecificPatternDeviceC
 void AlexaSpecificEventC(EspalexaDevice* d) {
     if (d == nullptr) return;
-    Serial.print("Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
+    #endif
     if (d->getValue() != 0)setPattern(SpecificPatternC);
     else setPattern(patternCount - 1);
 }
@@ -4153,8 +4224,10 @@ void AlexaSpecificEventC(EspalexaDevice* d) {
 #ifdef AddAudioDevice
 void AlexaAudioEvent(EspalexaDevice* d) {
     if (d == nullptr) return;
-
-    Serial.print("Alexa Audio update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #if LED_DEBUG != 0
+    SERIAL_DEBUG_BOL
+    Serial.print(" Alexa Audio update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
+    #endif
     if (d->getValue() != 0)setPattern(AUDIOPATTERN);
     else setPattern(patternCount - 1);
 
