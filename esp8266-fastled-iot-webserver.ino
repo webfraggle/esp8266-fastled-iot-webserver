@@ -768,17 +768,16 @@ void setup() {
 
     //  irReceiver.enableIRIn(); // Start the receiver
 
-    #if LED_DEBUG != 0
-    Serial.print(F("Heap: ")); Serial.println(system_get_free_heap_size());
-    Serial.print(F("Boot Vers: ")); Serial.println(system_get_boot_version());
-    Serial.print(F("CPU: ")); Serial.println(system_get_cpu_freq());
-    Serial.print(F("SDK: ")); Serial.println(system_get_sdk_version());
-    Serial.print(F("Chip ID: ")); Serial.println(system_get_chip_id());
-    Serial.print(F("Flash ID: ")); Serial.println(spi_flash_get_id());
-    Serial.print(F("Flash Size: ")); Serial.println(ESP.getFlashChipRealSize());
-    Serial.print(F("Vcc: ")); Serial.println(ESP.getVcc());
-    Serial.println();
-    #endif
+    SERIAL_DEBUG_LN(F("\nSystem Information:"))
+    SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
+    SERIAL_DEBUG_LNF("Boot Vers: %d", system_get_boot_version())
+    SERIAL_DEBUG_LNF("CPU Speed: %d MHz", system_get_cpu_freq())
+    SERIAL_DEBUG_LNF("SDK: %s", system_get_sdk_version())
+    SERIAL_DEBUG_LNF("Chip ID: %d", system_get_chip_id())
+    SERIAL_DEBUG_LNF("Flash ID: %d", spi_flash_get_id())
+    SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipRealSize())
+    SERIAL_DEBUG_LNF("Vcc: %d", ESP.getVcc())
+    SERIAL_DEBUG_EOL
 
 #ifdef SOUND_REACTIVE
 #if SENSOR_TYPE == 0
@@ -832,6 +831,9 @@ void setup() {
         SERIAL_DEBUG_EOL
         FSInfo fs_info;
         SPIFFS.info(fs_info);
+        if (fs_info.usedBytes == 0) {
+            SERIAL_DEBUG_LN(F("NO WEB SERVER FILES PRESENT! SEE: https://github.com/NimmLor/esp8266-fastled-iot-webserver/blob/master/Software_Installation.md#32-sketch-data-upload\n"))
+        }
         SERIAL_DEBUG_LNF("FS Size: %luKB, used: %luKB, %0.2f%%", \
                           fs_info.totalBytes, fs_info.usedBytes, \
                           (float) 100 / fs_info.totalBytes * fs_info.usedBytes)
@@ -1328,6 +1330,19 @@ void broadcastString(String name, String value)
 }
 
 void loop() {
+
+    static unsigned int loop_counter = 0;
+    static unsigned int current_fps = FRAMES_PER_SECOND;
+    static unsigned int frame_delay = (1000 / FRAMES_PER_SECOND) * 1000; // in micro seconds
+
+    // insert a delay to keep the framerate modest
+    // delayMicroseconds max value is 16383
+    if (frame_delay < 16000){
+        delayMicroseconds(frame_delay);
+    } else {
+        delay(frame_delay / 1000);
+    }
+
     // Add entropy to random number generator; we use a lot of it.
     random16_add_entropy(random(65535));
 
@@ -1469,12 +1484,35 @@ void loop() {
 
     FastLED.show();
 
-    // insert a delay to keep the framerate modest
-    //FastLED.delay(1000 / FRAMES_PER_SECOND);
-    delay(1000 / FRAMES_PER_SECOND);
-
     // call to save config if config has changed
     saveConfig();
+
+    // every second calculate the FPS and adjust frame delay to keep FPS smooth
+    EVERY_N_SECONDS(1) {
+        current_fps = loop_counter;
+        // frame delay stepping: 50 us
+        // fps sliding window +/- 1 frame
+        // too fast, we need to slow down. Don't increase the frame delay past 20 ms
+        if (current_fps > FRAMES_PER_SECOND + 1 && frame_delay <= 20000) {
+            int factor = current_fps - FRAMES_PER_SECOND; // factor for faster speed adjustment
+            if (factor < 1) factor = 1;
+            frame_delay += (50 * factor);
+
+        // too slow, we need to speed up a little bit
+        } else if (current_fps < FRAMES_PER_SECOND - 1 && frame_delay > 0) {
+            int factor = FRAMES_PER_SECOND - current_fps;
+            if (factor < 1) factor = 1;
+
+            if (frame_delay < (50 * factor)) {
+                frame_delay = 0;
+            } else {
+                frame_delay -= (50 * factor);
+            }
+        }
+        SERIAL_DEBUG_LNF("Stats: %lu frames/s, frame delay: %d us", current_fps, frame_delay)
+        loop_counter = 0;
+    }
+    loop_counter += 1;
 }
 
 void loadConfig()
