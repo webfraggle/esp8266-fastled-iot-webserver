@@ -76,7 +76,8 @@ function addNumberField(field) {
 
   var label = template.find(".control-label");
   label.attr("for", "input-" + field.name);
-  label.text(field.label);
+  var text = field.label.indexOf("Autoplay") > -1 ? field.label + ": " + field.value + " seconds" :field.label + ": " + (field.value * 100 / 255).toFixed(0) + "%"
+  label.text(text);
 
   var input = template.find(".input");
   var slider = template.find(".slider");
@@ -104,6 +105,7 @@ function addNumberField(field) {
     var value = $(this).val();
     input.val(value);
     field.value = value;
+    label.text(field.label + ":       " + (field.value * 100 / 255).toFixed(0) + "%");
     delayPostValue(field.name, value);
   });
 
