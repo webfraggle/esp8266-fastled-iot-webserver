@@ -62,8 +62,6 @@ extern "C" {
 #define MILLI_AMPS          10000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-//#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
-
 #define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
@@ -161,6 +159,8 @@ extern "C" {
 
     //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
+
+    //#define ENABLE_UDP_VISUALIZATION          // allows to sync the LEDs with pc-music using https://github.com/NimmLor/IoT-Audio-Visualization-Center
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -553,7 +553,7 @@ PatternAndNameList patterns = {
     { cloud2Twinkles,         "Cloud 2 Twinkles",             false, false, false, false, true},
     { oceanTwinkles,          "Ocean Twinkles",               false, false, false, false, true},
 
-#ifndef REMOVE_VISUALIZATION
+#ifdef ENABLE_UDP_VISUALIZATION
     // Visualization Patterns
 #if DEVICE_TYPE == 1                      // Matrix                          // palet  speed  color  spark  twinkle
     { RainbowVisualizer,                  "Rainbow Visualization",              true,  true,  true,  false, false},
@@ -860,7 +860,7 @@ void setup() {
     #ifdef ENABLE_SERIAL_AMBILIGHT
         SERIAL_DEBUG_LN(F("Feature: Serial ambilight support enabled"))
     #endif
-    #ifndef REMOVE_VISUALIZATION
+    #ifdef ENABLE_UDP_VISUALIZATION
         SERIAL_DEBUG_LN(F("Feature: UDP visualization support enabled"))
     #endif
     SERIAL_DEBUG_EOL
@@ -1298,9 +1298,9 @@ void setup() {
     //  webSocketsServer.onEvent(webSocketEvent);
     //  Serial.println("Web socket server started");
 
-#ifndef REMOVE_VISUALIZATION
+#ifdef ENABLE_UDP_VISUALIZATION
     initUdp(UDP_PORT);
-#endif // !REMOVE_VISUALIZATION
+#endif // ENABLE_UDP_VISUALIZATION
 
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
