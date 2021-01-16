@@ -64,11 +64,12 @@ extern "C" {
 
 //#define REMOVE_VISUALIZATION          // remove the comment to completly disable all udp-based visualization patterns
 
+#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
+
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
 #define DEVICE_TYPE 0                   // The following types are available
 
-#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
 /*
     0: Generic LED-Strip: a regular LED-Strip without any special arrangement (and Infinity Mirror + Bottle Lighting Pad)
         * Easiest: 5V WS2812B LED-Strip:            https://s.click.aliexpress.com/e/_dZ1hCJ7
@@ -1296,6 +1297,11 @@ void setup() {
     //  webSocketsServer.begin();
     //  webSocketsServer.onEvent(webSocketEvent);
     //  Serial.println("Web socket server started");
+
+#ifndef REMOVE_VISUALIZATION
+    initUdp(UDP_PORT);
+#endif // !REMOVE_VISUALIZATION
+
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
 }
