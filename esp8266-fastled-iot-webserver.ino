@@ -369,6 +369,8 @@ if you have connected the ring first it should look like this: const int twpOffs
 
     #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
     WiFiManager wifiManager;
+    bool wifiMangerPortalRunning = false;
+    bool wifiConnected = false;
 
 // Misc Params
 #define AVG_ARRAY_SIZE 10
@@ -819,6 +821,7 @@ void setup() {
         Serial.println("INFO: Wi-Fi connected");
     } else {
         Serial.println("INFO: Wi-Fi manager portal running");
+        wifiMangerPortalRunning = true;
     }
 
     // FS debug information
@@ -1288,20 +1291,16 @@ void setup() {
     Serial.println("INFO: HTTP web server started");
 
 #if DEVICE_TYPE == 2
-    bool sucess = false;
-    while (!sucess) {
-        sucess = GetTime();
-        if (!sucess) delay(300);
-    }
+    udpTime.begin(localPortTime);
 #endif
+
     //  webSocketsServer.begin();
     //  webSocketsServer.onEvent(webSocketEvent);
     //  Serial.println("Web socket server started");
 
 #ifdef ENABLE_UDP_VISUALIZATION
-    initUdp(UDP_PORT);
+    Udp.begin(port);
 #endif // ENABLE_UDP_VISUALIZATION
-
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
 }
@@ -1360,19 +1359,23 @@ void loop() {
     webServer.handleClient();
 #endif
 #ifdef ENABLE_MULTICAST_DNS
+    // FIXME: only update every second
     MDNS.update();
 #endif // ENABLE_MULTICAST_DNS
 
-    wifiManager.process();
+    if (wifiMangerPortalRunning) {
+        wifiManager.process();
+    }
 
-    static bool hasConnected = false;
     EVERY_N_SECONDS(1) {
-        if (wifiManager.getLastConxResult() != WL_CONNECTED) {
+        int currentWifiStatus = wifiManager.getLastConxResult();
+
+        if (currentWifiStatus != WL_CONNECTED && !wifiMangerPortalRunning) {
             SERIAL_DEBUG_LN("Trying to connect to Wifi")
-            hasConnected = false;
+            wifiConnected = false;
         }
-        else if (!hasConnected) {
-            hasConnected = true;
+        if (currentWifiStatus == WL_CONNECTED && !wifiConnected) {
+            wifiConnected = true;
             Serial.print("INFO: WiFi Connected! Open http://");
             Serial.print(WiFi.localIP());
             Serial.println(" in your browser");
@@ -1489,6 +1492,16 @@ void loop() {
     patterns[currentPatternIndex].pattern();
 
     FastLED.show();
+
+    // init time
+    // FIXME: use this to keep time updated. Don't rely on pattern to do this.
+#if DEVICE_TYPE == 2
+    EVERY_N_MILLISECONDS(200) {
+        if (wifiConnected && ntp_timestamp == 0) {
+            GetTime();
+        }
+    }
+#endif
 
     // call to save config if config has changed
     saveConfig();
@@ -2584,9 +2597,11 @@ void rainbow_vert()
 
 // #################### Clock
 #if DEVICE_TYPE == 2
-unsigned long sendNTPpacket(IPAddress& address)
-{
-    SERIAL_DEBUG_LN(F("sending NTP packet..."))
+// slightly adopted from https://www.geekstips.com/arduino-time-sync-ntp-server-esp8266-udp/
+void sendNTPpacket(IPAddress& address) {
+
+    SERIAL_DEBUG_LNF("sending NTP packet to %s...", address.toString().c_str())
+
     // set all bytes in the buffer to 0
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
     // Initialize values needed to form NTP request
@@ -2609,31 +2624,31 @@ unsigned long sendNTPpacket(IPAddress& address)
 }
 
 void PrintTime() {
-    if (hours < 10)Serial.print("0");
-    Serial.print(hours);
-    Serial.print(':');
-    if (mins < 10)Serial.print("0");
-    Serial.print(mins);
-    Serial.print(':');
-    if (secs < 10)Serial.print("0");
-    Serial.println(secs);
+    SERIAL_DEBUG_LNF("INFO: Current time: %02d:%02d:%02d\n", hours, mins, secs)
 }
 
 
-bool GetTime()
-{
+bool GetTime() {
+    static bool ntp_package_sent = false;
+    static unsigned long last_package_sent = 0;
+
     WiFi.hostByName(ntpServerName, timeServerIP);
 
-    sendNTPpacket(timeServerIP);
-    delay(1000);
-    ntp_timestamp = millis();
-
-    int cb = udpTime.parsePacket();
-    if (!cb) {
+    if (!ntp_package_sent || last_package_sent + 1000 < millis()) {
+        sendNTPpacket(timeServerIP);
+        ntp_package_sent = true;
+        last_package_sent = millis();
         return false;
     }
-    else {
+
+    if (ntp_package_sent) {
+        int cb = udpTime.parsePacket();
+        if (!cb) {
+            return false;
+        }
+
         SERIAL_DEBUG_LNF("packet received, length=%lu", cb)
+
         udpTime.read(packetBuffer, NTP_PACKET_SIZE);
         ntp_timestamp = millis();
 
@@ -2649,8 +2664,6 @@ bool GetTime()
         if (hours < 0)    hours += 24;
         mins = (epoch % 3600) / 60;
         secs = (epoch % 60);
-
-        Serial.println("INFO: Requesting time");
 
         PrintTime();
         return true;
@@ -2936,14 +2949,6 @@ void DrawDigit(int offset, int segmentLedCount, int r, int g, int b, int n, int 
 
 // #################### Visualization
 
-
-void initUdp(int port)
-{
-    Udp.begin(port);
-#if DEVICE_TYPE == 2
-    udpTime.begin(localPortTime);
-#endif
-}
 
 bool parseUdp()
 {
