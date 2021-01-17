@@ -1334,10 +1334,6 @@ void setup() {
     udpTime.begin(localPortTime);
 #endif
 
-    //  webSocketsServer.begin();
-    //  webSocketsServer.onEvent(webSocketEvent);
-    //  Serial.println("Web socket server started");
-
 #ifdef ENABLE_UDP_VISUALIZATION
     Udp.begin(localUdpPort);
 #endif // ENABLE_UDP_VISUALIZATION
@@ -1357,7 +1353,6 @@ void sendString(String value)
 void broadcastInt(String name, uint8_t value)
 {
     String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
-    //  webSocketsServer.broadcastTXT(json);
     #ifdef ENABLE_MQTT_SUPPORT
         if (cfg.MQTTEnabled == 1)
             sendStatus();
@@ -1367,7 +1362,6 @@ void broadcastInt(String name, uint8_t value)
 void broadcastString(String name, String value)
 {
     String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
-    //  webSocketsServer.broadcastTXT(json);
     #ifdef ENABLE_MQTT_SUPPORT
         if (cfg.MQTTEnabled == 1)
             sendStatus();
@@ -1391,8 +1385,6 @@ void loop() {
     // Add entropy to random number generator; we use a lot of it.
     random16_add_entropy(random(65535));
 
-    //  dnsServer.processNextRequest();
-    //  webSocketsServer.loop();
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.loop();
 #else

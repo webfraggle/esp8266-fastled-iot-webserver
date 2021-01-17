@@ -13,18 +13,6 @@ var ignoreColorChange = false;
 
 var patternData = {};
 
-var ws = new ReconnectingWebSocket('ws://' + address + ':81/', ['arduino']);
-ws.debug = true;
-
-ws.onmessage = function(evt) {
-  if(evt.data != null)
-  {
-    var data = JSON.parse(evt.data);
-    if(data == null) return;
-    updateFieldValue(data.name, data.value);
-  }
-}
-
 $(document).ready(function() {
   $("#status").html("Connecting, please wait...");
 
