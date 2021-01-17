@@ -105,7 +105,7 @@ function addNumberField(field) {
     var value = $(this).val();
     input.val(value);
     field.value = value;
-    label.text(field.label + ":       " + (field.value * 100 / 255).toFixed(0) + "%");
+    label.text(field.label.indexOf("Autoplay") > -1 ? field.label + ": " + field.value + " seconds" :field.label + ": " + (field.value * 100 / 255).toFixed(0) + "%");
     delayPostValue(field.name, value);
   });
 
