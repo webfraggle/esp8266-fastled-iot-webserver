@@ -1458,13 +1458,6 @@ void loop() {
     }
 #endif
 
-    if (power == 0) {
-        fill_solid(leds, NUM_LEDS, CRGB::Black);
-        FastLED.show();
-        // FastLED.delay(15);
-        return;
-    }
-
     EVERY_N_SECONDS(10) {
       SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
     }
@@ -1488,8 +1481,12 @@ void loop() {
         autoPlayTimeout = millis() + (autoplayDuration * 1000);
     }
 
-    // Call the current pattern function once, updating the 'leds' array
-    patterns[currentPatternIndex].pattern();
+    if (power == 0) {
+        fill_solid(leds, NUM_LEDS, CRGB::Black);
+    } else {
+        // Call the current pattern function once, updating the 'leds' array
+        patterns[currentPatternIndex].pattern();
+    }
 
     FastLED.show();
 
