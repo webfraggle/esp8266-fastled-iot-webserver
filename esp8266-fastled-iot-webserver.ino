@@ -314,12 +314,21 @@ if you have connected the ring first it should look like this: const int twpOffs
 ###########################################################################################################*/
 
 // define debugging MACROS
-#define SERIAL_DEBUG_ADD(s) if (LED_DEBUG != 0) { Serial.print(s); }
-#define SERIAL_DEBUG_ADDF(format, ...) if (LED_DEBUG != 0) { Serial.printf(format, __VA_ARGS__); }
-#define SERIAL_DEBUG_EOL if (LED_DEBUG != 0) { Serial.print("\n"); }
-#define SERIAL_DEBUG_BOL if (LED_DEBUG != 0) { Serial.printf("DEBUG [%lu]: ", millis()); }
+#if LED_DEBUG != 0
+#define SERIAL_DEBUG_ADD(s) Serial.print(s);
+#define SERIAL_DEBUG_ADDF(format, ...) Serial.printf(format, __VA_ARGS__);
+#define SERIAL_DEBUG_EOL Serial.print("\n");
+#define SERIAL_DEBUG_BOL Serial.printf("DEBUG [%lu]: ", millis());
 #define SERIAL_DEBUG_LN(s) SERIAL_DEBUG_BOL SERIAL_DEBUG_ADD(s) SERIAL_DEBUG_EOL
 #define SERIAL_DEBUG_LNF(format, ...) SERIAL_DEBUG_BOL SERIAL_DEBUG_ADDF(format, __VA_ARGS__) SERIAL_DEBUG_EOL
+#else
+#define SERIAL_DEBUG_ADD(s) do{}while(0);
+#define SERIAL_DEBUG_ADDF(s) do{}while(0);
+#define SERIAL_DEBUG_EOL do{}while(0);
+#define SERIAL_DEBUG_BOL do{}while(0);
+#define SERIAL_DEBUG_LN(s) do{}while(0);
+#define SERIAL_DEBUG_LNF(format, ...) do{}while(0);
+#endif
 
 #ifdef LED_DEVICE_TYPE
 #include <WiFiUdp.h>
