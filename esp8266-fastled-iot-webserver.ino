@@ -610,17 +610,16 @@ PatternAndNameList patterns = {
     { SingleColorBandVisualizer,    "Single Color Band Visualizer",                 true,  true,  true,  false, false},
   #endif
 
-#endif
-
 #if LED_DEVICE_TYPE == 4                                                   // palet  speed  color  spark  twinkle
     { NanoleafWaves,                "Nanoleaf Wave Visualizer",               true,  true,  true,  false, false},
     { NanoleafBand,                 "Nanoleaf Rainbow Band Visualizer",       true,  true,  true,  false, false},
     { NanoleafSingleBand,           "Nanoleaf Solid Color Band Visualizer",   true,  true,  true,  false, false},
 #endif
+#endif // ENABLE_UDP_VISUALIZATION
 
-  #ifdef ENABLE_SERIAL_AMBILIGHT                       // palet  speed  color  spark  twinkle
+#ifdef ENABLE_SERIAL_AMBILIGHT                         // palet  speed  color  spark  twinkle
     { ambilight,                    "⋆Serial Ambilight",  true,  true,  true,  false, false},
-  #endif // ENABLE_SERIAL_AMBILIGHT
+#endif // ENABLE_SERIAL_AMBILIGHT
 #ifdef SOUND_SENSOR_SUPPORT
     { soundReactive,                "Sound Reactive",     true,  true,  true,  false, false},
 #endif
