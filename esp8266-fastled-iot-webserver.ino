@@ -411,6 +411,9 @@ ESP8266WebServer webServer(80);
 #endif
 
 #ifdef ENABLE_ALEXA_SUPPORT
+#if LED_DEBUG != 0
+#define ESPALEXA_DEBUG
+#endif
 #include <Espalexa.h>
 void mainAlexaEvent(EspalexaDevice*);
 Espalexa espalexa;
@@ -801,6 +804,7 @@ void setup() {
     SERIAL_DEBUG_LNF("Flash ID: %d", spi_flash_get_id())
     SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipRealSize())
     SERIAL_DEBUG_LNF("Vcc: %d", ESP.getVcc())
+    SERIAL_DEBUG_LNF("MAC address: %s", WiFi.macAddress().c_str())
     SERIAL_DEBUG_EOL
 
 #ifdef SOUND_REACTIVE
@@ -827,9 +831,10 @@ void setup() {
     char nameChar[nameString.length() + 1];
     nameString.toCharArray(nameChar, sizeof(nameChar));
 
-    wifiManager.setHostname(cfg.hostname);
-    wifiManager.setConfigPortalBlocking(false);
-    wifiManager.setSaveConfigCallback(handleReboot);
+    // setup wifiManager
+    wifiManager.setHostname(cfg.hostname); // set hostname
+    wifiManager.setConfigPortalBlocking(false); // config portal is not blocking (LEDs light up in AP mode)
+    wifiManager.setSaveConfigCallback(handleReboot); // after the wireless settings have been saved a reboot will be performed
     #if LED_DEBUG != 0
         wifiManager.setDebugOutput(true);
     #else
@@ -866,6 +871,7 @@ void setup() {
     #endif
 
     // print setup details
+    SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP8266_RELEASE)
     SERIAL_DEBUG_LN(F("Enabled Features:"))
     #ifdef ENABLE_MULTICAST_DNS
         SERIAL_DEBUG_LN(F("Feature: mDNS support enabled"))
@@ -880,7 +886,7 @@ void setup() {
         SERIAL_DEBUG_LN(F("Feature: Sound sensor support enabled"))
     #endif
     #ifdef ENABLE_MQTT_SUPPORT
-        SERIAL_DEBUG_LN(F("Feature: MQTT support enabled"))
+        SERIAL_DEBUG_LNF("Feature: MQTT support enabled (mqtt version: %s)", String(MQTT_VERSION).c_str())
     #endif
     #ifdef ENABLE_SERIAL_AMBILIGHT
         SERIAL_DEBUG_LN(F("Feature: Serial ambilight support enabled"))
@@ -889,7 +895,7 @@ void setup() {
         SERIAL_DEBUG_LN(F("Feature: UDP visualization support enabled"))
     #endif
     #ifdef ENABLE_HOMEY_SUPPORT
-        SERIAL_DEBUG_LN(F("Feature: Homey support enabled"))
+        SERIAL_DEBUG_LNF("Feature: Homey support enabled (version: %s)", HOMEYDUINO_VERSION)
     #endif
     SERIAL_DEBUG_EOL
 
