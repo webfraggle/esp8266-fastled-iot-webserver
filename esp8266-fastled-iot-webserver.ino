@@ -62,7 +62,7 @@ extern "C" {
 #define MILLI_AMPS          10000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
+#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
@@ -135,8 +135,8 @@ extern "C" {
     // Choose your logo below, remove the comment in front of your design
     // Important: see "LOGO CONFIG" below
 
-    //#define TWENTYONEPILOTS
-    #define THINGIVERSE
+    #define TWENTYONEPILOTS
+    //#define THINGIVERSE     // FIXME: THIS IS BROKEN
 
 #endif
 
@@ -157,7 +157,7 @@ extern "C" {
 
     //#define ENABLE_SERIAL_AMBILIGHT           // allows to function as an ambilight behind a monitor by using data from usb-serial (integration of adalight)
 
-    //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
+    //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
     //#define ENABLE_UDP_VISUALIZATION          // allows to sync the LEDs with pc-music using https://github.com/NimmLor/IoT-Audio-Visualization-Center
@@ -362,7 +362,7 @@ if you have connected the ring first it should look like this: const int twpOffs
     #define PACKET_LENGTH (LEAFCOUNT * 3)
     #define BAND_GROUPING    1
 
-#elif VISUALIZER_TYPE == 5
+#elif LED_DEVICE_TYPE == 5
     #define BAND_GROUPING    1
     #ifdef TWENTYONEPILOTS
         #define NUM_LEDS      (RING_LENGTH+DOT_LENGTH+DOUBLE_STRIP_LENGTH+ITALIC_STRIP_LENGTH)
@@ -370,6 +370,7 @@ if you have connected the ring first it should look like this: const int twpOffs
     #ifdef THINGIVERSE
         #define NUM_LEDS      (RING_LENGTH+HORIZONTAL_LENGTH+VERTICAL_LENGTH)
     #endif
+    #define PACKET_LENGTH NUM_LEDS
 
 #else
     #ifdef BAND_GROUPING
@@ -410,6 +411,9 @@ ESP8266WebServer webServer(80);
 #endif
 
 #ifdef ENABLE_ALEXA_SUPPORT
+#if LED_DEBUG != 0
+#define ESPALEXA_DEBUG
+#endif
 #include <Espalexa.h>
 void mainAlexaEvent(EspalexaDevice*);
 Espalexa espalexa;
@@ -719,8 +723,7 @@ void addRebootPage(int webServerNr)
 }
 
 // we can't assing wifiManager.resetSettings(); to reset, somewhow it gets called straight away.
-void setWiFiConf(String ssid, String password)
-{
+void setWiFiConf(String ssid, String password) {
 #ifdef ESP8266
     struct station_config conf;
 
@@ -752,6 +755,7 @@ void setWiFiConf(String ssid, String password)
     }
 #endif
 }
+
 void setup() {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     Serial.begin(115200);
@@ -799,6 +803,7 @@ void setup() {
     SERIAL_DEBUG_LNF("Flash ID: %d", spi_flash_get_id())
     SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipRealSize())
     SERIAL_DEBUG_LNF("Vcc: %d", ESP.getVcc())
+    SERIAL_DEBUG_LNF("MAC address: %s", WiFi.macAddress().c_str())
     SERIAL_DEBUG_EOL
 
 #ifdef SOUND_REACTIVE
@@ -825,9 +830,10 @@ void setup() {
     char nameChar[nameString.length() + 1];
     nameString.toCharArray(nameChar, sizeof(nameChar));
 
-    wifiManager.setHostname(cfg.hostname);
-    wifiManager.setConfigPortalBlocking(false);
-    wifiManager.setSaveConfigCallback(handleReboot);
+    // setup wifiManager
+    wifiManager.setHostname(cfg.hostname); // set hostname
+    wifiManager.setConfigPortalBlocking(false); // config portal is not blocking (LEDs light up in AP mode)
+    wifiManager.setSaveConfigCallback(handleReboot); // after the wireless settings have been saved a reboot will be performed
     #if LED_DEBUG != 0
         wifiManager.setDebugOutput(true);
     #else
@@ -839,7 +845,7 @@ void setup() {
     if (wifiManager.autoConnect(nameChar)) {
         Serial.println("INFO: Wi-Fi connected");
     } else {
-        Serial.println("INFO: Wi-Fi manager portal running");
+        Serial.printf("INFO: Wi-Fi manager portal running. Connect to the Wi-Fi AP '%s' to configure your wireless connection\n", nameChar);
         wifiMangerPortalRunning = true;
     }
 
@@ -863,6 +869,8 @@ void setup() {
         SERIAL_DEBUG_EOL
     #endif
 
+    // print setup details
+    SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP8266_RELEASE)
     SERIAL_DEBUG_LN(F("Enabled Features:"))
     #ifdef ENABLE_MULTICAST_DNS
         SERIAL_DEBUG_LN(F("Feature: mDNS support enabled"))
@@ -877,7 +885,7 @@ void setup() {
         SERIAL_DEBUG_LN(F("Feature: Sound sensor support enabled"))
     #endif
     #ifdef ENABLE_MQTT_SUPPORT
-        SERIAL_DEBUG_LN(F("Feature: MQTT support enabled"))
+        SERIAL_DEBUG_LNF("Feature: MQTT support enabled (mqtt version: %s)", String(MQTT_VERSION).c_str())
     #endif
     #ifdef ENABLE_SERIAL_AMBILIGHT
         SERIAL_DEBUG_LN(F("Feature: Serial ambilight support enabled"))
@@ -886,9 +894,22 @@ void setup() {
         SERIAL_DEBUG_LN(F("Feature: UDP visualization support enabled"))
     #endif
     #ifdef ENABLE_HOMEY_SUPPORT
-        SERIAL_DEBUG_LN(F("Feature: Homey support enabled"))
+        SERIAL_DEBUG_LNF("Feature: Homey support enabled (version: %s)", HOMEYDUINO_VERSION)
     #endif
     SERIAL_DEBUG_EOL
+
+    switch(LED_DEVICE_TYPE) {
+        case 0: SERIAL_DEBUG_LN("Configured device type: LED strip (0)") break;
+        case 1: SERIAL_DEBUG_LN("Configured device type: LED MATRIX (1)") break;
+        case 2: SERIAL_DEBUG_LN("Configured device type: 7-Segment Clock (2)") break;
+        case 3: SERIAL_DEBUG_LN("Configured device type: Desk Lamp (3)") break;
+        case 4: SERIAL_DEBUG_LN("Configured device type: Nanoleafs (4)") break;
+        case 5: SERIAL_DEBUG_LN("Configured device type: Animated Logos (5)") break;
+    }
+
+    SERIAL_DEBUG_LNF("NUM_LEDS: %d", NUM_LEDS)
+    SERIAL_DEBUG_LNF("BAND_GROUPING: %d", BAND_GROUPING)
+    SERIAL_DEBUG_LNF("PACKET_LENGTH: %d", PACKET_LENGTH)
 
     #ifdef ENABLE_HOMEY_SUPPORT
         //Start Homey library
@@ -1353,8 +1374,7 @@ void broadcastInt(String name, uint8_t value)
 {
     String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
     #ifdef ENABLE_MQTT_SUPPORT
-        if (cfg.MQTTEnabled == 1)
-            sendStatus();
+        mqttSendStatus();
     #endif
 }
 
@@ -1362,8 +1382,7 @@ void broadcastString(String name, String value)
 {
     String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
     #ifdef ENABLE_MQTT_SUPPORT
-        if (cfg.MQTTEnabled == 1)
-            sendStatus();
+        mqttSendStatus();
     #endif
 }
 
@@ -1389,10 +1408,6 @@ void loop() {
 #else
     webServer.handleClient();
 #endif
-#ifdef ENABLE_MULTICAST_DNS
-    // FIXME: only update every second
-    MDNS.update();
-#endif // ENABLE_MULTICAST_DNS
 
     if (wifiMangerPortalRunning) {
         wifiManager.process();
@@ -1423,6 +1438,9 @@ void loop() {
             }
 #endif
         }
+#ifdef ENABLE_MULTICAST_DNS
+        MDNS.update();
+#endif // ENABLE_MULTICAST_DNS
     }
 
 #ifdef ENABLE_MQTT_SUPPORT
@@ -1476,7 +1494,7 @@ void loop() {
                     }
                     if (mqttClient.endPublish() == true) {
                         SERIAL_DEBUG_LN("Configuration Publishing Finished")
-                        sendStatus();
+                        mqttSendStatus();
                         SERIAL_DEBUG_LN("Sending Initial Status")
                     }
                 } else {
@@ -1489,7 +1507,7 @@ void loop() {
     }
 
     EVERY_N_SECONDS(90) {
-        sendStatus();
+        mqttSendStatus();
     }
 #endif
 
@@ -4147,6 +4165,8 @@ void setBar(int row, int num, CHSV col)
 #endif
 
 // ############################## AMBILIGHT ##############################
+#ifdef ENABLE_SERIAL_AMBILIGHT
+
 #define INITIAL_LED_TEST_ENABLED true
 #define INITIAL_LED_TEST_BRIGHTNESS 16  // 0..255
 #define INITIAL_LED_TEST_TIME_MS 250  // 10..
@@ -4218,7 +4238,7 @@ void ambilight() {
             if (!checkIncommingData() || prefix[i] != Serial.read()) {
                 i = 0;
             }
-    }
+        }
         if (!checkIncommingData()) continue;
         hi = Serial.read();
         if (!checkIncommingData()) continue;
@@ -4262,8 +4282,9 @@ void ambilight() {
             endTime = millis() + OFF_TIMEOUT;
             FastLED.show();
         }
+    }
 }
-}
+#endif
 //############################## SERIAL AMBILIGHT END #############################
 
 //############################## ALEXA Device Events ##############################
@@ -4553,6 +4574,7 @@ void thingiverse()  // twenty one pilots
 
     if (!even)
     {
+        // FIXME: This is BROKEN, beatsaw8 takes 5 arguments, 3 given here
         //pos = beatsin8(spd, 0, VERTICAL_LENGTH + (HORIZONTAL_LENGTH - 1) / 2);
         pos = beatsaw8(spd, 0, VERTICAL_LENGTH + (HORIZONTAL_LENGTH - 1) / 2);
         b = beatsaw8(spd * 2, 255 / 2, 255);
@@ -4747,6 +4769,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     DynamicJsonDocument doc(1024);
     deserializeJson(doc, payload);
 
+    SERIAL_DEBUG_LNF("Received MQTT package: %s", doc.as<String>().c_str())
+
     JsonObject obj = doc.as<JsonObject>();
     for (JsonPair p : obj) {
         const char* key = p.key().c_str();
@@ -4792,11 +4816,12 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         }
     }
     mqttProcessing = false;
-    sendStatus();
+    mqttSendStatus();
 }
 
-void sendStatus()
-{
+void mqttSendStatus() {
+    if (cfg.MQTTEnabled != 1) return;
+
     StaticJsonDocument<128> JSONencoder;
     JSONencoder["state"] = (power == 1 ? "ON" : "OFF"),
       JSONencoder["brightness"] = brightness,
@@ -4808,6 +4833,7 @@ void sendStatus()
     size_t n = serializeJson(JSONencoder, JSONmessage);
     if (!mqttProcessing){
         mqttClient.publish(MQTT_TOPIC, JSONmessage, n, true);
+        SERIAL_DEBUG_LNF("Sending MQTT package: %s", JSONencoder.as<String>().c_str())
     }
 }
 #endif // ENABLE_MQTT_SUPPORT
