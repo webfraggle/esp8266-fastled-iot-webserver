@@ -559,20 +559,20 @@ PatternAndNameList patterns = {
     { incandescentTwinkles,   "Incandescent Twinkles",  false, false, false, false, false},
 
     // TwinkleFOX patterns                                 // palet  speed  color  spark  twinkle
-    { retroC9Twinkles,        "Retro C9 Twinkles",            false, false, false, false, true},
-    { redWhiteTwinkles,       "Red & White Twinkles",         false, false, false, false, true},
-    { blueWhiteTwinkles,      "Blue & White Twinkles",        false, false, false, false, true},
-    { redGreenWhiteTwinkles,  "Red, Green & White Twinkles",  false, false, false, false, true},
-    { fairyLightTwinkles,     "Fairy Light Twinkles",         false, false, false, false, true},
-    { snow2Twinkles,          "Snow 2 Twinkles",              false, false, false, false, true},
-    { hollyTwinkles,          "Holly Twinkles",               false, false, false, false, true},
-    { iceTwinkles,            "Ice Twinkles",                 false, false, false, false, true},
-    { partyTwinkles,          "Party Twinkles",               false, false, false, false, true},
-    { forestTwinkles,         "Forest Twinkles",              false, false, false, false, true},
-    { lavaTwinkles,           "Lava Twinkles",                false, false, false, false, true},
-    { fireTwinkles,           "Fire Twinkles",                false, false, false, false, true},
-    { cloud2Twinkles,         "Cloud 2 Twinkles",             false, false, false, false, true},
-    { oceanTwinkles,          "Ocean Twinkles",               false, false, false, false, true},
+    { retroC9Twinkles,        "Retro C9 Twinkles",            false, true,  false, false, true},
+    { redWhiteTwinkles,       "Red & White Twinkles",         false, true,  false, false, true},
+    { blueWhiteTwinkles,      "Blue & White Twinkles",        false, true,  false, false, true},
+    { redGreenWhiteTwinkles,  "Red, Green & White Twinkles",  false, true,  false, false, true},
+    { fairyLightTwinkles,     "Fairy Light Twinkles",         false, true,  false, false, true},
+    { snow2Twinkles,          "Snow 2 Twinkles",              false, true,  false, false, true},
+    { hollyTwinkles,          "Holly Twinkles",               false, true,  false, false, true},
+    { iceTwinkles,            "Ice Twinkles",                 false, true,  false, false, true},
+    { partyTwinkles,          "Party Twinkles",               false, true,  false, false, true},
+    { forestTwinkles,         "Forest Twinkles",              false, true,  false, false, true},
+    { lavaTwinkles,           "Lava Twinkles",                false, true,  false, false, true},
+    { fireTwinkles,           "Fire Twinkles",                false, true,  false, false, true},
+    { cloud2Twinkles,         "Cloud 2 Twinkles",             false, true,  false, false, true},
+    { oceanTwinkles,          "Ocean Twinkles",               false, true,  false, false, true},
 
 #ifdef ENABLE_UDP_VISUALIZATION
     // Visualization Patterns
@@ -1139,21 +1139,11 @@ void setup() {
         sendInt(speed);
         });
 
-    webServer.on("/twinkleSpeed", HTTP_POST, []() {
-        String value = webServer.arg("value");
-        twinkleSpeed = value.toInt();
-        if (twinkleSpeed < 0) twinkleSpeed = 0;
-        else if (twinkleSpeed > 8) twinkleSpeed = 8;
-        SERIAL_DEBUG_LNF("Setting: twinkle speed %d", twinkleSpeed)
-        broadcastInt("twinkleSpeed", twinkleSpeed);
-        sendInt(twinkleSpeed);
-        });
-
     webServer.on("/twinkleDensity", HTTP_POST, []() {
         String value = webServer.arg("value");
         twinkleDensity = value.toInt();
         if (twinkleDensity < 0) twinkleDensity = 0;
-        else if (twinkleDensity > 8) twinkleDensity = 8;
+        else if (twinkleDensity > 255) twinkleDensity = 255;
         SERIAL_DEBUG_LNF("Setting: twinkle density %d", twinkleDensity)
         broadcastInt("twinkleDensity", twinkleDensity);
         sendInt(twinkleDensity);
@@ -1493,6 +1483,7 @@ void loadConfig() {
         currentPaletteIndex = paletteCount - 1;
 
     speed = cfg.speed;
+    twinkleSpeed = map(speed, 0, 255, 0, 8);
 
     if (!isValidHostname(cfg.hostname, sizeof(cfg.hostname))) {
         strncpy(cfg.hostname, DEFAULT_HOSTNAME, sizeof(cfg.hostname));
@@ -1771,6 +1762,8 @@ void setSpeed(uint8_t value)
     else if (value < 0) value = 0;
 
     speed = value;
+
+    twinkleSpeed = map(speed, 0, 255, 0, 8);
 
     cfg.speed = speed;
     setConfigChanged();
