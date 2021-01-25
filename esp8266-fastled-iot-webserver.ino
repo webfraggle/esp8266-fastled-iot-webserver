@@ -380,18 +380,19 @@ if you have connected the ring first it should look like this: const int twpOffs
     #endif
 #endif
 
+    // wifi definition
     #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
     WiFiManager wifiManager;
     bool wifiMangerPortalRunning = false;
     bool wifiConnected = false;
 
-// Misc Params
-#define AVG_ARRAY_SIZE 10
-#define BAND_START 0
-#define BAND_END 3        // can be increased when working with bigger spectrums (40+)
-#define UDP_PORT 4210
+    // Misc Params
+    #define AVG_ARRAY_SIZE 10
+    #define BAND_START 0
+    #define BAND_END 3        // can be increased when working with bigger spectrums (40+)
+    #define UDP_PORT 4210     // used for UDP visualization
 
-    WiFiUDP Udp;
+    WiFiUDP Udp;              // used for NTP and visualization
     unsigned int localUdpPort = UDP_PORT;  // local port to listen on
     uint8_t incomingPacket[PACKET_LENGTH + 1];
 #endif
@@ -401,7 +402,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 
 ESP8266WebServer webServer(80);
 
-#include "FSBrowser.h"
+// #include "FSBrowser.h" currently not used
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 #define FRAMES_PER_SECOND  120  // here you can control the speed. With the Access Point / Web Server the animations run a bit slower.
 #define SOUND_REACTIVE_FPS FRAMES_PER_SECOND
@@ -483,13 +484,8 @@ uint8_t verySlowHue = 0; // very slow gHue
 
 CRGB solidColor = CRGB::Blue;
 
-// scale the brightness of all pixels down
-void dimAll(byte value)
-{
-    for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i].nscale8(value);
-    }
-}
+// I just don't know why. Anyone an idea?
+void IfThisIsRemovedTheScatchWillFailToBuild(void) {};
 
 typedef void(*Pattern)();
 typedef Pattern PatternList[];
@@ -641,120 +637,32 @@ typedef struct {
 typedef PaletteAndName PaletteAndNameList[];
 
 const CRGBPalette16 palettes[] = {
-  RainbowColors_p,
-  RainbowStripeColors_p,
-  CloudColors_p,
-  LavaColors_p,
-  OceanColors_p,
-  ForestColors_p,
-  PartyColors_p,
-  HeatColors_p
+    RainbowColors_p,
+    RainbowStripeColors_p,
+    CloudColors_p,
+    LavaColors_p,
+    OceanColors_p,
+    ForestColors_p,
+    PartyColors_p,
+    HeatColors_p
 };
 
 const uint8_t paletteCount = ARRAY_SIZE(palettes);
 
 const String paletteNames[paletteCount] = {
-  "Rainbow",
-  "Rainbow Stripe",
-  "Cloud",
-  "Lava",
-  "Ocean",
-  "Forest",
-  "Party",
-  "Heat",
+    "Rainbow",
+    "Rainbow Stripe",
+    "Cloud",
+    "Lava",
+    "Ocean",
+    "Forest",
+    "Party",
+    "Heat",
 };
 
 #include "Fields.h"
 
-
-
-void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
-{
-    solidColor = CRGB(r, g, b);
-
-    cfg.red = r;
-    cfg.green = g;
-    cfg.blue = b;
-    setConfigChanged();
-
-    if (updatePattern && currentPatternIndex != patternCount - 2)setPattern(patternCount - 1);
-
-    SERIAL_DEBUG_LNF("Setting: solid Color: red %d, green %d, blue %d", r, g ,b)
-    broadcastString("color", String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
-}
-
-void setSolidColor(CRGB color, bool updatePattern)
-{
-    setSolidColor(color.r, color.g, color.b, updatePattern);
-}
-
-String getRebootString()
-{
-    return "<html><head><meta http-equiv=\"refresh\" content=\"4; url=/\"/></head><body><font face='arial'><b><h2>Rebooting... returning in 4 seconds</h2></b></font></body></html>";
-}
-void handleReboot()
-{
-    webServer.send(200, "text/html", getRebootString());
-    delay(500);
-    ESP.restart();
-}
-
-#ifdef ENABLE_ALEXA_SUPPORT
-void handleReboot2()
-{
-    webServer2.send(200, "text/html", getRebootString());
-    delay(500);
-    ESP.restart();
-}
-#endif // ENABLE_ALEXA_SUPPORT
-
-void addRebootPage(int webServerNr)
-{
-    if (webServerNr < 2)
-    {
-        webServer.on("/reboot", handleReboot);
-    }
-    #ifdef ENABLE_ALEXA_SUPPORT
-    else if (webServerNr == 2)
-    {
-        webServer2.on("/reboot", handleReboot2);
-    }
-    #endif // ENABLE_ALEXA_SUPPORT
-}
-
-// we can't assing wifiManager.resetSettings(); to reset, somewhow it gets called straight away.
-void setWiFiConf(String ssid, String password) {
-#ifdef ESP8266
-    struct station_config conf;
-
-    wifi_station_get_config(&conf);
-
-    memset(conf.ssid, 0, sizeof(conf.ssid));
-    for (int i = 0; i < ssid.length() && i < sizeof(conf.ssid); i++)
-        conf.ssid[i] = ssid.charAt(i);
-
-    memset(conf.password, 0, sizeof(conf.password));
-    for (int i = 0; i < password.length() && i < sizeof(conf.password); i++)
-        conf.password[i] = password.charAt(i);
-
-    wifi_station_set_config(&conf);
-
-// untested due to lack of ESP32
-#elif defined(ESP32)
-    if(WiFiGenericClass::getMode() != WIFI_MODE_NULL){
-
-          wifi_config_t conf;
-          esp_wifi_get_config(WIFI_IF_STA, &conf);
-
-          memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
-          ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
-          memset(conf.sta.password, 0, sizeof(conf.sta.password));
-          password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
-
-          esp_wifi_set_config(WIFI_IF_STA, &conf);
-    }
-#endif
-}
+// ######################## define setup() and loop() ####################
 
 void setup() {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -941,35 +849,23 @@ void setup() {
 
         webServer.send(200, "text/html", h);
         delay(100);
-        //webServer.stop();
-        //delay(500);
-        //webServer.close();
-        //delay(500);
-        //addRebootPage();
-        //delay(100);
-        //webServer.stop();
-        //delay(500);
-        //webServer.close();
-        //delay(500);
+
         ArduinoOTA.setHostname(cfg.hostname);
 #ifdef OTA_PASSWORD
         ArduinoOTA.setPassword(OTA_PASSWORD);
 #endif
         ArduinoOTA.onStart([]() {
-            String type;
             SPIFFS.end();
             if (ArduinoOTA.getCommand() == U_FLASH) {
-                type = "sketch";
-            }
-            else { // U_FS
-                type = "filesystem";
+                Serial.println("Start updating sketch");
+            } else { // U_FS
+                Serial.println("Start updating filesystem");
             }
 
             // NOTE: if updating FS this would be the place to unmount FS using FS.end()
-            Serial.println("Start updating " + type);
             });
         ArduinoOTA.onEnd([]() {
-            Serial.println("\nEnd");
+            Serial.println("\nFinished OTA Update\nRebooting");
             delay(500);
             ESP.restart();
             });
@@ -996,14 +892,13 @@ void setup() {
             });
         ArduinoOTA.begin();
         delay(100);
-        while (1)
-        {
+        while (1) {
             ArduinoOTA.handle();
             delay(1);
             webServer.handleClient();
             delay(1);
         }
-        });
+        }); // GET /ota
 #endif
 
 #ifdef ENABLE_ALEXA_SUPPORT
@@ -1136,8 +1031,8 @@ void setup() {
         String new_hostname = webServer.arg("hostname");
 
         if (new_hostname.length() != 0 && String(cfg.hostname) != new_hostname) {
-          setHostname(new_hostname);
-          force_restart = true;
+            setHostname(new_hostname);
+            force_restart = true;
         }
 
 #ifdef ENABLE_MQTT_SUPPORT
@@ -1249,6 +1144,7 @@ void setup() {
         twinkleSpeed = value.toInt();
         if (twinkleSpeed < 0) twinkleSpeed = 0;
         else if (twinkleSpeed > 8) twinkleSpeed = 8;
+        SERIAL_DEBUG_LNF("Setting: twinkle speed %d", twinkleSpeed)
         broadcastInt("twinkleSpeed", twinkleSpeed);
         sendInt(twinkleSpeed);
         });
@@ -1258,6 +1154,7 @@ void setup() {
         twinkleDensity = value.toInt();
         if (twinkleDensity < 0) twinkleDensity = 0;
         else if (twinkleDensity > 8) twinkleDensity = 8;
+        SERIAL_DEBUG_LNF("Setting: twinkle density %d", twinkleDensity)
         broadcastInt("twinkleDensity", twinkleDensity);
         sendInt(twinkleDensity);
         });
@@ -1323,8 +1220,8 @@ void setup() {
 
 
     //list directory
+    /* // Currently no directory/file functions are used
     webServer.on("/list", HTTP_GET, handleFileList);
-    /*
     //load editor
     webServer.on("/edit", HTTP_GET, []() {
         if (!handleFileRead("/edit.htm")) webServer.send(404, "text/plain", "FileNotFound");
@@ -1359,31 +1256,6 @@ void setup() {
 #endif // ENABLE_UDP_VISUALIZATION
 
     autoPlayTimeout = millis() + (autoplayDuration * 1000);
-}
-void sendInt(uint8_t value)
-{
-    sendString(String(value));
-}
-
-void sendString(String value)
-{
-    webServer.send(200, "text/plain", value);
-}
-
-void broadcastInt(String name, uint8_t value)
-{
-    String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
-    #ifdef ENABLE_MQTT_SUPPORT
-        mqttSendStatus();
-    #endif
-}
-
-void broadcastString(String name, String value)
-{
-    String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
-    #ifdef ENABLE_MQTT_SUPPORT
-        mqttSendStatus();
-    #endif
 }
 
 void loop() {
@@ -1584,8 +1456,7 @@ void loop() {
     loop_counter += 1;
 }
 
-void loadConfig()
-{
+void loadConfig() {
 
     SERIAL_DEBUG_LN(F("Loading config"))
 
@@ -1643,72 +1514,82 @@ void loadConfig()
 #endif
 }
 
-bool isValidHostname(char *hostname_to_check, long size)
-{
-    for (int i = 0; i < size; i++) {
-        if (hostname_to_check[i] == '-' || hostname_to_check[i] == '.')
-          continue;
-        else if (hostname_to_check[i] >= '0' && hostname_to_check[i] <= '9')
-          continue;
-        else if (hostname_to_check[i] >= 'A' && hostname_to_check[i] <= 'Z')
-          continue;
-        else if (hostname_to_check[i] >= 'a' && hostname_to_check[i] <= 'z')
-          continue;
-        else if (hostname_to_check[i] == 0 && i>0)
-          break;
+// ######################## web server functions #########################
 
-        return false;
+String getRebootString() {
+    return "<html><head><meta http-equiv=\"refresh\" content=\"4; url=/\"/></head><body><font face='arial'><b><h2>Rebooting... returning in 4 seconds</h2></b></font></body></html>";
+}
+
+void handleReboot() {
+    webServer.send(200, "text/html", getRebootString());
+    delay(500);
+    ESP.restart();
+}
+
+#ifdef ENABLE_ALEXA_SUPPORT
+void handleReboot2() {
+    webServer2.send(200, "text/html", getRebootString());
+    delay(500);
+    ESP.restart();
+}
+#endif // ENABLE_ALEXA_SUPPORT
+
+void addRebootPage(int webServerNr) {
+    if (webServerNr < 2) {
+        webServer.on("/reboot", handleReboot);
     }
-
-    return true;
+    #ifdef ENABLE_ALEXA_SUPPORT
+    else if (webServerNr == 2) {
+        webServer2.on("/reboot", handleReboot2);
+    }
+    #endif // ENABLE_ALEXA_SUPPORT
 }
 
-#ifdef ENABLE_HOMEY_SUPPORT
-void homeyLightOnoff( void ) {
-    setPower(Homey.value.toInt());
-    SERIAL_DEBUG_LNF("Homey set power: %s", (power == 1) ? "on" : "off")
+void sendInt(uint8_t value) {
+    sendString(String(value));
 }
 
-void homeyLightDim( void ) {
-    float mappedBrightness = 0.0;
-    homeyBrightness = Homey.value.toFloat();
-    mappedBrightness = mapfloat(homeyBrightness, 0.0, 1.0, 0.0, 255.0);
-    SERIAL_DEBUG_LNF("Homey set brightness: %f == %d", homeyBrightness, mappedBrightness)
-    setBrightness((uint8_t) mappedBrightness);
+void sendString(String value) {
+    webServer.send(200, "text/plain", value);
 }
 
-void homeyLightHue( void ) {
-    homeyHue = Homey.value.toFloat();
-    SERIAL_DEBUG_LNF("Homey set hue: %f", homeyHue)
-    setAutoplay(false);
-    setPatternName(String("Solid Color"));
-    homeySolidColor = true;
+// These are old functions from previous websocket implementation
+// but we keep then as this could be still used in the future
+void broadcastInt(String name, uint8_t value) {
+    //String json = "{\"name\":\"" + name + "\",\"value\":" + String(value) + "}";
+    #ifdef ENABLE_MQTT_SUPPORT
+        mqttSendStatus();
+    #endif
 }
 
-void homeyLightSaturation( void ) {
-    homeySat = Homey.value.toFloat();
-    SERIAL_DEBUG_LNF("Homey set saturation: %f", homeySat)
-    setAutoplay(false);
-    setPatternName(String("Solid Color"));
-    homeySolidColor = true;
+void broadcastString(String name, String value) {
+    //String json = "{\"name\":\"" + name + "\",\"value\":\"" + String(value) + "\"}";
+    #ifdef ENABLE_MQTT_SUPPORT
+        mqttSendStatus();
+    #endif
 }
 
-void homeyNext( void ) {
-    SERIAL_DEBUG_LN(F("Homey set next pattern"))
-    setAutoplay(false);
-    adjustPattern(true);
+// ############## functions to update current settings ###################
+
+void setSolidColor(uint8_t r, uint8_t g, uint8_t b, bool updatePattern)
+{
+    solidColor = CRGB(r, g, b);
+
+    cfg.red = r;
+    cfg.green = g;
+    cfg.blue = b;
+    setConfigChanged();
+
+    if (updatePattern && currentPatternIndex != patternCount - 2)setPattern(patternCount - 1);
+
+    SERIAL_DEBUG_LNF("Setting: solid Color: red %d, green %d, blue %d", r, g ,b)
+    broadcastString("color", String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
 }
 
-void homeyPrev( void ) {
-    SERIAL_DEBUG_LN(F("Homey set previous pattern"))
-    setAutoplay(false);
-    adjustPattern(false);
+void setSolidColor(CRGB color, bool updatePattern)
+{
+    setSolidColor(color.r, color.g, color.b, updatePattern);
 }
-
-float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-#endif
 
 void setPower(uint8_t value)
 {
@@ -1741,8 +1622,6 @@ void setAutoplayDuration(uint8_t value)
     SERIAL_DEBUG_LNF("Setting: autoplay duration: %d seconds", autoplayDuration)
     broadcastInt("autoplayDuration", autoplayDuration);
 }
-
-
 
 // increase or decrease the current pattern number, and wrap around at the ends
 void adjustPattern(bool up)
@@ -1898,6 +1777,8 @@ void setSpeed(uint8_t value)
     SERIAL_DEBUG_LNF("Setting: speed: %d", speed)
     broadcastInt("speed", speed);
 }
+
+// ######################### pattern functions ###########################
 
 void strandTest()
 {
@@ -2339,10 +2220,7 @@ unsigned long patternDelay[ARRAY_SIZE(patterns)] =
     0, 0, 0, 55, 55, 5, 10, 15, 15, 15, 0
 };
 
-///////////////////////////
-//   Pattern functions   //
-///////////////////////////
-
+// ######################### pattern functions ###########################
 
 void rainbowRoll()
 {
@@ -2689,17 +2567,14 @@ void colorwaves_Lamp(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette, u
             for (int l = 0; l < LEDS_PER_LINE; l++)
             {
                 nblend(ledarray[pixelnumber * LEDS_PER_LINE + l], newcolor, 128);
-}
-    }
-        else
-        {
+            }
+        } else {
             for (int p = 0; p < LINE_COUNT; p++)
             {
                 if (p % 2 == 0) nblend(leds[p * LEDS_PER_LINE + pixelnumber], newcolor, 128);
                 else nblend(leds[p * LEDS_PER_LINE + (LEDS_PER_LINE - pixelnumber - 1)], newcolor, 128);
             }
         }
-
     }
 }
 
@@ -3072,7 +2947,7 @@ void DrawDigit(int offset, int segmentLedCount, int r, int g, int b, int n, int 
 
 // #################### Visualization
 
-
+#ifdef ENABLE_UDP_VISUALIZATION
 bool parseUdp()
 {
     static int nopackage = 0;
@@ -4162,7 +4037,8 @@ void setBar(int row, int num, CHSV col)
     }
 }
 
-#endif
+#endif // LED_DEVICE_TYPE == 1
+#endif // ENABLE_UDP_VISUALIZATION
 
 // ############################## AMBILIGHT ##############################
 #ifdef ENABLE_SERIAL_AMBILIGHT
@@ -4838,3 +4714,52 @@ void mqttSendStatus() {
 }
 #endif // ENABLE_MQTT_SUPPORT
 //############################## MQTT HELPER FUNCTIONS END ##############################
+
+// ###################### Homey support functions ########################
+
+#ifdef ENABLE_HOMEY_SUPPORT
+void homeyLightOnoff( void ) {
+    setPower(Homey.value.toInt());
+    SERIAL_DEBUG_LNF("Homey set power: %s", (power == 1) ? "on" : "off")
+}
+
+void homeyLightDim( void ) {
+    float mappedBrightness = 0.0;
+    homeyBrightness = Homey.value.toFloat();
+    mappedBrightness = mapfloat(homeyBrightness, 0.0, 1.0, 0.0, 255.0);
+    SERIAL_DEBUG_LNF("Homey set brightness: %f == %d", homeyBrightness, mappedBrightness)
+    setBrightness((uint8_t) mappedBrightness);
+}
+
+void homeyLightHue( void ) {
+    homeyHue = Homey.value.toFloat();
+    SERIAL_DEBUG_LNF("Homey set hue: %f", homeyHue)
+    setAutoplay(false);
+    setPatternName(String("Solid Color"));
+    homeySolidColor = true;
+}
+
+void homeyLightSaturation( void ) {
+    homeySat = Homey.value.toFloat();
+    SERIAL_DEBUG_LNF("Homey set saturation: %f", homeySat)
+    setAutoplay(false);
+    setPatternName(String("Solid Color"));
+    homeySolidColor = true;
+}
+
+void homeyNext( void ) {
+    SERIAL_DEBUG_LN(F("Homey set next pattern"))
+    setAutoplay(false);
+    adjustPattern(true);
+}
+
+void homeyPrev( void ) {
+    SERIAL_DEBUG_LN(F("Homey set previous pattern"))
+    setAutoplay(false);
+    adjustPattern(false);
+}
+
+float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+#endif

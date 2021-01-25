@@ -125,6 +125,25 @@ void resetConfig() {
     saveConfig(true);
 }
 
+bool isValidHostname(char *hostname_to_check, long size) {
+    for (int i = 0; i < size; i++) {
+        if (hostname_to_check[i] == '-' || hostname_to_check[i] == '.')
+          continue;
+        else if (hostname_to_check[i] >= '0' && hostname_to_check[i] <= '9')
+          continue;
+        else if (hostname_to_check[i] >= 'A' && hostname_to_check[i] <= 'Z')
+          continue;
+        else if (hostname_to_check[i] >= 'a' && hostname_to_check[i] <= 'z')
+          continue;
+        else if (hostname_to_check[i] == 0 && i>0)
+          break;
+
+        return false;
+    }
+
+    return true;
+}
+
 // parse and set a new hostname to config
 void setHostname(String new_hostname) {
     int j = 0;
@@ -142,4 +161,37 @@ void setHostname(String new_hostname) {
     setConfigChanged();
 }
 
+// we can't assing wifiManager.resetSettings(); to reset, somewhow it gets called straight away.
+void setWiFiConf(String ssid, String password) {
+#ifdef ESP8266
+    struct station_config conf;
+
+    wifi_station_get_config(&conf);
+
+    memset(conf.ssid, 0, sizeof(conf.ssid));
+    for (int i = 0; i < ssid.length() && i < sizeof(conf.ssid); i++)
+        conf.ssid[i] = ssid.charAt(i);
+
+    memset(conf.password, 0, sizeof(conf.password));
+    for (int i = 0; i < password.length() && i < sizeof(conf.password); i++)
+        conf.password[i] = password.charAt(i);
+
+    wifi_station_set_config(&conf);
+
+// untested due to lack of ESP32
+#elif defined(ESP32)
+    if(WiFiGenericClass::getMode() != WIFI_MODE_NULL){
+
+          wifi_config_t conf;
+          esp_wifi_get_config(WIFI_IF_STA, &conf);
+
+          memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
+          ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
+          memset(conf.sta.password, 0, sizeof(conf.sta.password));
+          password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
+
+          esp_wifi_set_config(WIFI_IF_STA, &conf);
+    }
+#endif
+}
 // EOF
