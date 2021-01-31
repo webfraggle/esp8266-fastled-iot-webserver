@@ -186,9 +186,12 @@ void setWiFiConf(String ssid, String password) {
           esp_wifi_get_config(WIFI_IF_STA, &conf);
 
           memset(conf.sta.ssid, 0, sizeof(conf.sta.ssid));
-          ssid.toCharArray(conf.sta.ssid, sizeof(conf.sta.ssid));
+          for (int i = 0; i < ssid.length() && i < sizeof(conf.sta.ssid); i++)
+              conf.sta.ssid[i] = ssid.charAt(i);
+
           memset(conf.sta.password, 0, sizeof(conf.sta.password));
-          password.toCharArray(conf.sta.password, sizeof(conf.sta.password));
+          for (int i = 0; i < password.length() && i < sizeof(conf.sta.password); i++)
+              conf.sta.password[i] = password.charAt(i);
 
           esp_wifi_set_config(WIFI_IF_STA, &conf);
     }

@@ -19,12 +19,17 @@
 //#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 FASTLED_USING_NAMESPACE
+#include <FS.h>
+#ifdef ESP8266
 extern "C" {
 #include "user_interface.h"
 }
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <FS.h>
+#elif defined(ESP32)
+#include <WiFi.h>
+#include <SPIFFS.h>
+#endif
 #include <EEPROM.h>
 #include "GradientPalettes.h"
 #include "Field.h"
@@ -400,7 +405,11 @@ if you have connected the ring first it should look like this: const int twpOffs
 // include config management
 #include "config.h"
 
+#ifdef ESP8266
 ESP8266WebServer webServer(80);
+#elif defined(ESP32)
+WebServer webServer(80);
+#endif
 
 // #include "FSBrowser.h" currently not used
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -423,7 +432,11 @@ EspalexaDevice* alexa_main;
 #endif // ENABLE_ALEXA_SUPPORT
 
 #ifdef ENABLE_MULTICAST_DNS
+#ifdef ESP8266
 #include <ESP8266mDNS.h>
+#elif defined(ESP32)
+#include <ESPmDNS.h>
+#endif //ESP32
 #endif // ENABLE_MULTICAST_DNS
 
 #ifdef ENABLE_HOMEY_SUPPORT
@@ -665,7 +678,9 @@ const String paletteNames[paletteCount] = {
 // ######################## define setup() and loop() ####################
 
 void setup() {
+#ifdef ESP8266
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
+#endif
     WiFi.mode(WIFI_STA);    // avoid creating a seperate AP
     Serial.begin(115200);
 
@@ -705,13 +720,18 @@ void setup() {
     SERIAL_DEBUG_EOL
     SERIAL_DEBUG_LN(F("System Information:"))
     SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
+    SERIAL_DEBUG_LNF("SDK: %s", system_get_sdk_version())
+#ifdef ESP8266
     SERIAL_DEBUG_LNF("Boot Vers: %d", system_get_boot_version())
     SERIAL_DEBUG_LNF("CPU Speed: %d MHz", system_get_cpu_freq())
-    SERIAL_DEBUG_LNF("SDK: %s", system_get_sdk_version())
     SERIAL_DEBUG_LNF("Chip ID: %d", system_get_chip_id())
     SERIAL_DEBUG_LNF("Flash ID: %d", spi_flash_get_id())
     SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipRealSize())
     SERIAL_DEBUG_LNF("Vcc: %d", ESP.getVcc())
+#elif defined(ESP32)
+    SERIAL_DEBUG_LNF("CPU Speed: %d MHz", ESP.getCpuFreqMHz())
+    SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipSize())
+#endif
     SERIAL_DEBUG_LNF("MAC address: %s", WiFi.macAddress().c_str())
     SERIAL_DEBUG_EOL
 
@@ -728,10 +748,8 @@ void setup() {
     }
 
     // setting up Wifi
-    uint8_t mac[WL_MAC_ADDR_LENGTH];
-    WiFi.softAPmacAddress(mac);
-    String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
-        String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
+    String macID = WiFi.macAddress().substring(12, 14) +
+        WiFi.macAddress().substring(15, 17);
     macID.toUpperCase();
 
     String nameString = String(cfg.hostname) + String(" - ") + macID;
@@ -762,6 +780,7 @@ void setup() {
     // THIS NEEDS TO BE PAST THE WIFI SETUP!! OTHERWISE WIFI SETUP WILL BE DELAYED
     #if LED_DEBUG != 0
         SERIAL_DEBUG_LN(F("SPIFFS contents:"))
+        #ifdef ESP8266
         Dir dir = SPIFFS.openDir("/");
         while (dir.next()) {
             SERIAL_DEBUG_LNF("FS File: %s, size: %lu", dir.fileName().c_str(), dir.fileSize())
@@ -769,17 +788,34 @@ void setup() {
         SERIAL_DEBUG_EOL
         FSInfo fs_info;
         SPIFFS.info(fs_info);
-        if (fs_info.usedBytes == 0) {
+        unsigned int totalBytes = fs_info.totalBytes;
+        unsigned int usedBytes = fs_info.usedBytes;
+        #elif defined(ESP32)
+        File root = SPIFFS.open("/");
+        File file = root.openNextFile();
+        while (file) {
+            SERIAL_DEBUG_LNF("FS File: %s, size: %lu", file.name(), file.size())
+            file = root.openNextFile();
+        }
+        SERIAL_DEBUG_EOL
+        unsigned int totalBytes = SPIFFS.totalBytes();
+        unsigned int usedBytes = SPIFFS.usedBytes();
+        #endif
+        if (usedBytes == 0) {
             SERIAL_DEBUG_LN(F("NO WEB SERVER FILES PRESENT! SEE: https://github.com/NimmLor/esp8266-fastled-iot-webserver/blob/master/Software_Installation.md#32-sketch-data-upload\n"))
         }
         SERIAL_DEBUG_LNF("FS Size: %luKB, used: %luKB, %0.2f%%", \
-                          fs_info.totalBytes, fs_info.usedBytes, \
-                          (float) 100 / fs_info.totalBytes * fs_info.usedBytes)
+                          totalBytes, usedBytes, \
+                          (float) 100 / totalBytes * usedBytes)
         SERIAL_DEBUG_EOL
     #endif
 
     // print setup details
+    #ifdef ESP8266
     SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP8266_RELEASE)
+    #elif defined(ESP32) && defined(ARDUINO_ESP32_RELEASE)
+    SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP32_RELEASE)
+    #endif
     SERIAL_DEBUG_LN(F("Enabled Features:"))
     #ifdef ENABLE_MULTICAST_DNS
         SERIAL_DEBUG_LN(F("Feature: mDNS support enabled"))
@@ -1301,7 +1337,7 @@ void loop() {
             }
 #endif
         }
-#ifdef ENABLE_MULTICAST_DNS
+#if defined(ENABLE_MULTICAST_DNS) && defined(ESP8266)
         MDNS.update();
 #endif // ENABLE_MULTICAST_DNS
     }
