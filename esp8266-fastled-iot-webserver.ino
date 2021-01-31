@@ -666,6 +666,7 @@ const String paletteNames[paletteCount] = {
 
 void setup() {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
+    WiFi.mode(WIFI_STA);    // avoid creating a seperate AP
     Serial.begin(115200);
 
     delay(100);
