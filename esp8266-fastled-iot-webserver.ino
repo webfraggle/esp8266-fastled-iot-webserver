@@ -427,7 +427,11 @@ WebServer webServer(80);
 #include <Espalexa.h>
 void mainAlexaEvent(EspalexaDevice*);
 Espalexa espalexa;
+#ifdef ESP8266
 ESP8266WebServer webServer2(80);
+#elif defined(ESP32)
+WebServer webServer2(80);
+#endif
 EspalexaDevice* alexa_main;
 #endif // ENABLE_ALEXA_SUPPORT
 
