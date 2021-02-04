@@ -156,7 +156,7 @@ extern "C" {
 
     //#define ENABLE_SERIAL_AMBILIGHT           // allows to function as an ambilight behind a monitor by using data from usb-serial (integration of adalight)
 
-    //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
+    #define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1335,7 +1335,7 @@ void loop() {
                 Serial.println("connected \n");
 
                 Serial.println("Subscribing to MQTT Topics \n");
-                mqttClient.subscribe(cfg.MQTTTopic MQTT_TOPIC_SET);
+                mqttClient.subscribe(strcat(strcat("",cfg.MQTTTopic),MQTT_TOPIC_SET));
 
                 DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
@@ -1357,7 +1357,7 @@ void loop() {
                     effect_list.add(patterns[i].name);
                 }
                 size_t n = measureJson(JSONencoder);
-                if (mqttClient.beginPublish(cfg.MQTTTopic "/config", n, true) == true) {
+                if (mqttClient.beginPublish(strcat(strcat("",cfg.MQTTTopic),"/config"), n, true) == true) {
                     Serial.println("Configuration Publishing Begun");
                     if (serializeJson(JSONencoder, mqttClient) == n){
                          Serial.println("Configuration Sent");
