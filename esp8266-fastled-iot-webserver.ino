@@ -156,7 +156,7 @@ extern "C" {
 
     //#define ENABLE_SERIAL_AMBILIGHT           // allows to function as an ambilight behind a monitor by using data from usb-serial (integration of adalight)
 
-    #define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
+    //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
 //---------------------------------------------------------------------------------------------------------//
