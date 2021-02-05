@@ -156,7 +156,7 @@ extern "C" {
 
     //#define ENABLE_SERIAL_AMBILIGHT           // allows to function as an ambilight behind a monitor by using data from usb-serial (integration of adalight)
 
-    //#define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
+    #define ENABLE_MQTT_SUPPORT               // allows integration in homeassistant/googlehome/mqtt, 
                                                 // mqtt server required, see MQTT Configuration for more, implemented by GitHub/WarDrake
 
 //---------------------------------------------------------------------------------------------------------//
@@ -999,6 +999,7 @@ void setup() {
         json += ",\"mqttPort\":\"" + String(cfg.MQTTPort) + "\"";
         json += ",\"mqttUsername\":\"" + String(cfg.MQTTUser) + "\"";
         json += ",\"mqttTopic\":\"" + String(cfg.MQTTTopic) + "\"";
+        json += ",\"mqttSetTopic\":\"" + String(cfg.MQTTSetTopic) + "\"";
         json += ",\"mqttDevicename\":\"" + String(cfg.MQTTDeviceName) + "\"";
 #endif
         json += "}}]";
@@ -1031,6 +1032,7 @@ void setup() {
         String mqtt_username = webServer.arg("mqtt-user");
         String mqtt_password = webServer.arg("mqtt-password");
         String mqtt_topic = webServer.arg("mqtt-topic");
+        String mqtt_set_topic = webServer.arg("mqtt-set-topic");
         String mqtt_device_name = webServer.arg("mqtt-device-name");
 
         if (cfg.MQTTEnabled != mqtt_enabled) {
@@ -1055,6 +1057,10 @@ void setup() {
         }
         if (mqtt_topic.length() > 0 && String(cfg.MQTTTopic) != mqtt_topic) {
             mqtt_topic.toCharArray(cfg.MQTTTopic, sizeof(cfg.MQTTTopic));
+            force_restart = true;
+        }
+        if (mqtt_set_topic.length() > 0 && String(cfg.MQTTSetTopic) != mqtt_set_topic) {
+            mqtt_set_topic.toCharArray(cfg.MQTTSetTopic, sizeof(cfg.MQTTSetTopic));
             force_restart = true;
         }
         if (mqtt_device_name.length() > 0 && String(cfg.MQTTDeviceName) != mqtt_device_name) {
@@ -1335,8 +1341,15 @@ void loop() {
                 Serial.println("connected \n");
 
                 Serial.println("Subscribing to MQTT Topics \n");
-                mqttClient.subscribe(strcat(strcat("",cfg.MQTTTopic),MQTT_TOPIC_SET));
+                char mqttSetTopicC[85];
+                strcpy(mqttSetTopicC, cfg.MQTTTopic);
+                strcpy(mqttSetTopicC, cfg.MQTTSetTopic);
+                mqttClient.subscribe(mqttSetTopicC);
 
+                char mqttSetTopicS[25];
+                strcpy(mqttSetTopicS, "~");
+                strcpy(mqttSetTopicS, cfg.MQTTSetTopic);
+                
                 DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
                     JSONencoder["name"] = cfg.MQTTDeviceName,
@@ -1345,7 +1358,7 @@ void loop() {
                     JSONencoder["dev"]["mdl"] = "0.4.4",
                     JSONencoder["dev"]["name"] = cfg.MQTTDeviceName,
                     JSONencoder["stat_t"] = "~",
-                    JSONencoder["cmd_t"] = "~" MQTT_TOPIC_SET,
+                    JSONencoder["cmd_t"] = mqttSetTopicS,
                     JSONencoder["brightness"] = true,
                     JSONencoder["rgb"] = true,
                     JSONencoder["effect"] = true,
@@ -1357,7 +1370,10 @@ void loop() {
                     effect_list.add(patterns[i].name);
                 }
                 size_t n = measureJson(JSONencoder);
-                if (mqttClient.beginPublish(strcat(strcat("",cfg.MQTTTopic),"/config"), n, true) == true) {
+                char mqttConfigTopic[85];
+                strcpy(mqttConfigTopic, cfg.MQTTTopic);
+                strcpy(mqttConfigTopic, "/config");
+                if (mqttClient.beginPublish(mqttConfigTopic, n, true) == true) {
                     Serial.println("Configuration Publishing Begun");
                     if (serializeJson(JSONencoder, mqttClient) == n){
                          Serial.println("Configuration Sent");
@@ -1483,6 +1499,7 @@ void loadConfig()
         strncpy(cfg.MQTTUser, MQTT_USER, sizeof(cfg.MQTTUser));
         strncpy(cfg.MQTTPass, MQTT_PASS, sizeof(cfg.MQTTPass));
         strncpy(cfg.MQTTTopic, MQTT_TOPIC, sizeof(cfg.MQTTTopic));
+        strncpy(cfg.MQTTSetTopic, MQTT_TOPIC, sizeof(cfg.MQTTSetTopic));
         strncpy(cfg.MQTTDeviceName, MQTT_DEVICE_NAME, sizeof(cfg.MQTTDeviceName));
         save_config = true;
     }

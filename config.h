@@ -20,6 +20,7 @@ typedef struct {
   char MQTTUser[33];
   char MQTTPass[65];
   char MQTTTopic[65];
+  char MQTTSetTopic[65];
   char MQTTDeviceName[33];
 } configData_t;
 
