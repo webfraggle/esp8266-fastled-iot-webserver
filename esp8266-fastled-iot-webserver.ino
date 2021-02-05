@@ -428,10 +428,6 @@ EspalexaDevice* alexa_main;
 
 #ifdef ENABLE_HOMEY_SUPPORT
 #include <Homey.h>              //Athom Homey library
-float homeyBrightness = 0.0;
-float homeyHue = 0.6274509804;  // Blue
-float homeySat = 1.0;           // Full
-bool  homeySolidColor = false;
 #endif
 
 CRGB leds[NUM_LEDS];
@@ -511,18 +507,18 @@ PatternAndNameList patterns = {
     // Time patterns
 #if LED_DEVICE_TYPE == 2                             // palet  speed  color  spark  twinkle
     { displayTimeStatic,        "Time",                 true,  true,  true,  false, false},
-    { displayTimeColorful,      "Time Colorful",        true,  true,  true,  false, false},
-    { displayTimeGradient,      "Time Gradient",        true,  true,  true,  false, false},
-    { displayTimeGradientLarge, "Time Gradient large",  true,  true,  true,  false, false},
-    { displayTimeRainbow,       "Time Rainbow",         true,  true,  true,  false, false},
+    { displayTimeColorful,      "Time Colorful",        true,  true,  false, false, false},
+    { displayTimeGradient,      "Time Gradient",        true,  true,  false, false, false},
+    { displayTimeGradientLarge, "Time Gradient large",  true,  true,  false, false, false},
+    { displayTimeRainbow,       "Time Rainbow",         true,  true,  false, false, false},
 #endif
 
 #if LED_DEVICE_TYPE == 3                             // palet  speed  color  spark  twinkle
-    { pride_Waves,            "Pride Waves",            true,  true,  true,  false, false},
-    { pride_Rings,            "Pride Rings",            true,  true,  true,  false, false},
-    { colorWaves_hori,        "Vertical Waves",         true,  true,  true,  false, false},
-    { colorWaves_vert,        "Color Rings",            true,  true,  true,  false, false},
-    { rainbow_vert,           "Vertical Rainbow",       true,  true,  true,  false, false},
+    { pride_Waves,            "Pride Waves",            true,  true,  false, false, false},
+    { pride_Rings,            "Pride Rings",            true,  true,  false, false, false},
+    { colorWaves_hori,        "Vertical Waves",         true,  true,  false, false, false},
+    { colorWaves_vert,        "Color Rings",            true,  true,  false, false, false},
+    { rainbow_vert,           "Vertical Rainbow",       true,  true,  false, false, false},
 #endif
 
     // animation patterns                            // palet  speed  color  spark  twinkle
@@ -577,51 +573,51 @@ PatternAndNameList patterns = {
 #ifdef ENABLE_UDP_VISUALIZATION
     // Visualization Patterns
 #if LED_DEVICE_TYPE == 1                  // Matrix                          // palet  speed  color  spark  twinkle
-    { RainbowVisualizer,                  "Rainbow Visualization",              true,  true,  true,  false, false},
+    { RainbowVisualizer,                  "Rainbow Visualization",              true,  true,  false, false, false},
     { SingleColorVisualizer,              "Single Color Visualization",         true,  true,  true,  false, false},
-    { RainbowVisualizerDoubleSided,       "Rainbow Visualization Outside",      true,  true,  true,  false, false},
+    { RainbowVisualizerDoubleSided,       "Rainbow Visualization Outside",      true,  true,  false, false, false},
     { SingleColorVisualizerDoubleSided,   "Single Color Visualization Outside"  true,  true,  true,  false, false},
     
     #ifdef AddLogoVisualizers
         #if LENGTH == 32 && HEIGHT == 8   // Logo Visualizers
-      { HbzVisualizerRainbow,             "Hbz Visualizer Spectrum",            true,  true,  true,  false, false},
-        { HbzVisualizerWhite,             "Hbz Visualizer",                     true,  true,  true,  false, false},
+        { HbzVisualizerRainbow,           "Hbz Visualizer Spectrum",            true,  true,  false, false, false},
+        { HbzVisualizerWhite,             "Hbz Visualizer",                     true,  true,  false, false, false},
         #endif
     #endif
 #endif
 
   #ifdef LED_DEVICE_TYPE        // Generic Visualization Patterns                // palet  speed  color  spark  twinkle
-    { vuMeterSolid,                 "Solid Volume Visualizer",                      true,  true,  true,  false, false},
-    { vuMeterStaticRainbow,         "Static Rainbow Volume Visualizer",             true,  true,  true,  false, false},
-    { vuMeterRainbow,               "Flowing Rainbow Volume Visualizer",            true,  true,  true,  false, false},
-    { vuMeterTriColor,              "Tri-Color Volume Visualizer",                  true,  true,  true,  false, false},
-    { RefreshingVisualizer,         "Wave Visualizer",                              true,  true,  true,  false, false},
-    { CentralVisualizer,            "Center Visualizer",                            true,  true,  true,  false, false},
+    { vuMeterSolid,                 "Solid Volume Visualizer",                      true,  true,  false, false, false},
+    { vuMeterStaticRainbow,         "Static Rainbow Volume Visualizer",             true,  true,  false, false, false},
+    { vuMeterRainbow,               "Flowing Rainbow Volume Visualizer",            true,  true,  false, false, false},
+    { vuMeterTriColor,              "Tri-Color Volume Visualizer",                  true,  true,  false, false, false},
+    { RefreshingVisualizer,         "Wave Visualizer",                              true,  true,  false, false, false},
+    { CentralVisualizer,            "Center Visualizer",                            true,  true,  false, false, false},
     { SolidColorDualTone,           "Solid-Color Pair Bullet Visualizer",           true,  true,  true,  false, false},
     { SolidColorComplementary,      "Solid-Color Complementary Bullet Visualizer",  true,  true,  true,  false, false},
-    { BluePurpleBullets,            "Blue/Purple Bullet Visualizer",                true,  true,  true,  false, false},
-    { BulletVisualizer,             "Beat-Bullet Visualization",                    true,  true,  true,  false, false},
+    { BluePurpleBullets,            "Blue/Purple Bullet Visualizer",                true,  true,  false, false, false},
+    { BulletVisualizer,             "Beat-Bullet Visualization",                    true,  true,  false, false, false},
     //{ RainbowPeaks,                 "Rainbow Peak Visualizer"},                     // broken
-    { RainbowBassRings,             "Bass Ring Visualizer",                         true,  true,  true,  false, false},
-    { RainbowKickRings,             "Kick Ring Visualizer",                         true,  true,  true,  false, false},
+    { RainbowBassRings,             "Bass Ring Visualizer",                         true,  true,  false, false, false},
+    { RainbowKickRings,             "Kick Ring Visualizer",                         true,  true,  false, false, false},
     //{ TrailingBulletsVisualizer,    "Trailing Bullet Visualization"},               // obsolete
     //{ BrightnessVisualizer,         "Brightness Visualizer"},                       // broken
-    { RainbowBandVisualizer,        "Rainbow Band Visualizer",                      true,  true,  true,  false, false},
+    { RainbowBandVisualizer,        "Rainbow Band Visualizer",                      true,  true,  false, false, false},
     { SingleColorBandVisualizer,    "Single Color Band Visualizer",                 true,  true,  true,  false, false},
   #endif
 
 #if LED_DEVICE_TYPE == 4                                                   // palet  speed  color  spark  twinkle
-    { NanoleafWaves,                "Nanoleaf Wave Visualizer",               true,  true,  true,  false, false},
-    { NanoleafBand,                 "Nanoleaf Rainbow Band Visualizer",       true,  true,  true,  false, false},
+    { NanoleafWaves,                "Nanoleaf Wave Visualizer",               true,  true,  false, false, false},
+    { NanoleafBand,                 "Nanoleaf Rainbow Band Visualizer",       true,  true,  false, false, false},
     { NanoleafSingleBand,           "Nanoleaf Solid Color Band Visualizer",   true,  true,  true,  false, false},
 #endif
 #endif // ENABLE_UDP_VISUALIZATION
 
 #ifdef ENABLE_SERIAL_AMBILIGHT                         // palet  speed  color  spark  twinkle
-    { ambilight,                    "⋆Serial Ambilight",  true,  true,  true,  false, false},
+    { ambilight,                    "⋆Serial Ambilight",  true,  true,  false, false, false},
 #endif // ENABLE_SERIAL_AMBILIGHT
 #ifdef SOUND_SENSOR_SUPPORT
-    { soundReactive,                "Sound Reactive",     true,  true,  true,  false, false},
+    { soundReactive,                "Sound Reactive",     true,  true,  false, false, false},
 #endif
 
     { showSolidColor,               "Solid Color",        false, false, true,  false, false}
@@ -824,17 +820,17 @@ void setup() {
         //Start Homey library
         Homey.begin(cfg.hostname);
         Homey.setClass("light");
-        Homey.addCapability("onoff", homeyLightOnoff);                    //boolean
-        Homey.addCapability("dim", homeyLightDim);                        //number 0.00 - 1.00
-        Homey.addCapability("light_hue", homeyLightHue);                  //number 0.00 - 1.00
-        Homey.addCapability("light_saturation", homeyLightSaturation);    //number 0.00 - 1.00
-        Homey.addCapability("speaker_next", homeyNext);                   //boolean
-        Homey.addCapability("speaker_prev", homeyPrev);                   //boolean
+        Homey.addCapability("onoff", homeyLightOnoff);                          //boolean
+        Homey.addCapability("dim", homeyLightDim);                              //number 0.00 - 1.00
+        Homey.addCapability("light_hue", homeyLightHue);                        //number 0.00 - 1.00
+        Homey.addCapability("light_saturation", homeyLightSaturation);          //number 0.00 - 1.00
+        Homey.addCapability("speaker_next", homeyNext);                         //boolean
+        Homey.addCapability("speaker_prev", homeyPrev);                         //boolean
     
-        Homey.setCapabilityValue("onoff", cfg.power);                     //Set initial value
-        Homey.setCapabilityValue("dim", homeyBrightness);                 //Set initial value
-        Homey.setCapabilityValue("light_hue", homeyHue);                  //Set initial value
-        Homey.setCapabilityValue("light_saturation", homeySat);           //Set initial value
+        Homey.setCapabilityValue("onoff", cfg.power);                           //Set initial value
+        Homey.setCapabilityValue("dim", getBrightnessMapped(0.0f, 1.0f));       //Set initial value
+        Homey.setCapabilityValue("light_hue", getHueMapped(0.0f, 1.0f));        //Set initial value
+        Homey.setCapabilityValue("light_saturation", getSatMapped(0.0f, 1.0f)); //Set initial value
     #endif
 
 #ifdef ENABLE_OTA_SUPPORT
@@ -1017,7 +1013,7 @@ void setup() {
         webServer.send(200, "application/json", json);
         });
 
-    webServer.on("/settings", HTTP_POST, []() {
+    webServer.on("/settings", []() {
 
         bool force_restart = false;
 
@@ -1114,33 +1110,40 @@ void setup() {
         webServer.send(200, "text/json", newValue);
         });
 
-    webServer.on("/power", HTTP_POST, []() {
+    webServer.on("/power", []() {
         String value = webServer.arg("value");
-        setPower(value.toInt());
+        value.toLowerCase();
+        if (value == String("1") || value == String("on")) {
+            setPower(1);
+        } else if (value == String("0") || value == String("off")) {
+            setPower(0);
+        } else if (value == String("toggle")) {
+            setPower((power == 1) ? 0 : 1);
+        }
         sendInt(power);
         });
 
-    webServer.on("/cooling", HTTP_POST, []() {
+    webServer.on("/cooling", []() {
         String value = webServer.arg("value");
         cooling = value.toInt();
         broadcastInt("cooling", cooling);
         sendInt(cooling);
         });
 
-    webServer.on("/sparking", HTTP_POST, []() {
+    webServer.on("/sparking", []() {
         String value = webServer.arg("value");
         sparking = value.toInt();
         broadcastInt("sparking", sparking);
         sendInt(sparking);
         });
 
-    webServer.on("/speed", HTTP_POST, []() {
+    webServer.on("/speed", []() {
         String value = webServer.arg("value");
         setSpeed(value.toInt());
         sendInt(speed);
         });
 
-    webServer.on("/twinkleDensity", HTTP_POST, []() {
+    webServer.on("/twinkleDensity", []() {
         String value = webServer.arg("value");
         twinkleDensity = value.toInt();
         if (twinkleDensity < 0) twinkleDensity = 0;
@@ -1150,7 +1153,7 @@ void setup() {
         sendInt(twinkleDensity);
         });
 
-    webServer.on("/solidColor", HTTP_POST, []() {
+    webServer.on("/solidColor", []() {
         String r = webServer.arg("r");
         String g = webServer.arg("g");
         String b = webServer.arg("b");
@@ -1161,7 +1164,25 @@ void setup() {
         sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
         });
 
-    webServer.on("/pattern", HTTP_POST, []() {
+    webServer.on("/hue", []() {
+        String value = webServer.arg("value");
+        setSolidColorHue(value.toInt(), false);
+#ifdef ENABLE_ALEXA_SUPPORT
+        alexa_main->setColor(solidColor.r, solidColor.g, solidColor.b);
+#endif
+        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
+        });
+
+    webServer.on("/saturation", []() {
+        String value = webServer.arg("value");
+        setSolidColorSat(value.toInt(), false);
+#ifdef ENABLE_ALEXA_SUPPORT
+        alexa_main->setColor(solidColor.r, solidColor.g, solidColor.b);
+#endif
+        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
+        });
+
+    webServer.on("/pattern", []() {
         String value = webServer.arg("value");
         #if LED_DEVICE_TYPE == 2
         switchedTimePattern = true;
@@ -1170,25 +1191,25 @@ void setup() {
         sendInt(currentPatternIndex);
         });
 
-    webServer.on("/patternName", HTTP_POST, []() {
+    webServer.on("/patternName", []() {
         String value = webServer.arg("value");
         setPatternName(value);
         sendInt(currentPatternIndex);
         });
 
-    webServer.on("/palette", HTTP_POST, []() {
+    webServer.on("/palette", []() {
         String value = webServer.arg("value");
         setPalette(value.toInt());
         sendInt(currentPaletteIndex);
         });
 
-    webServer.on("/paletteName", HTTP_POST, []() {
+    webServer.on("/paletteName", []() {
         String value = webServer.arg("value");
         setPaletteName(value);
         sendInt(currentPaletteIndex);
         });
 
-    webServer.on("/brightness", HTTP_POST, []() {
+    webServer.on("/brightness", []() {
         String value = webServer.arg("value");
         setBrightness(value.toInt());
 #ifdef ENABLE_ALEXA_SUPPORT
@@ -1197,13 +1218,13 @@ void setup() {
         sendInt(brightness);
         });
 
-    webServer.on("/autoplay", HTTP_POST, []() {
+    webServer.on("/autoplay", []() {
         String value = webServer.arg("value");
         setAutoplay(value.toInt());
         sendInt(autoplay);
         });
 
-    webServer.on("/autoplayDuration", HTTP_POST, []() {
+    webServer.on("/autoplayDuration", []() {
         String value = webServer.arg("value");
         setAutoplayDuration(value.toInt());
         sendInt(autoplayDuration);
@@ -1583,6 +1604,24 @@ void setSolidColor(CRGB color, bool updatePattern)
     setSolidColor(color.r, color.g, color.b, updatePattern);
 }
 
+void setSolidColorHue(uint8_t hue, bool updatePattern)
+{
+    CRGB color = solidColor;
+    CHSV temp_chsv = rgb2hsv_approximate(color);
+    temp_chsv.hue = hue;
+    hsv2rgb_rainbow(temp_chsv, color);
+    setSolidColor(color.r, color.g, color.b, updatePattern);
+}
+
+void setSolidColorSat(uint8_t sat, bool updatePattern)
+{
+    CRGB color = solidColor;
+    CHSV temp_chsv = rgb2hsv_approximate(color);
+    temp_chsv.sat = sat;
+    hsv2rgb_rainbow(temp_chsv, color);
+    setSolidColor(color.r, color.g, color.b, updatePattern);
+}
+
 void setPower(uint8_t value)
 {
     power = value == 0 ? 0 : 1;
@@ -1662,12 +1701,6 @@ void adjustPattern(bool up)
 
     SERIAL_DEBUG_LNF("Setting: pattern: %s", patterns[currentPatternIndex].name.c_str())
 
-#ifdef ENABLE_HOMEY_SUPPORT
-    if (patterns[currentPatternIndex].name == String("Solid Color")) {
-        homeySolidColor = false;
-    }
-#endif
-
     broadcastInt("pattern", currentPatternIndex);
 }
 
@@ -1685,12 +1718,6 @@ void setPattern(uint8_t value)
 
 
     SERIAL_DEBUG_LNF("Setting: pattern: %s", patterns[currentPatternIndex].name.c_str())
-
-#ifdef ENABLE_HOMEY_SUPPORT
-    if (patterns[currentPatternIndex].name == String("Solid Color")) {
-        homeySolidColor = false;
-    }
-#endif
 
     broadcastInt("pattern", currentPatternIndex);
 }
@@ -1772,6 +1799,30 @@ void setSpeed(uint8_t value)
     broadcastInt("speed", speed);
 }
 
+// genric functions to map current values to desired range
+float getBrightnessMapped(float min, float max) {
+    return mapfloat((float) brightness, 0.0, 255.0, min, max);
+}
+uint8_t getBrightnessMapped(uint8_t min, uint8_t max) {
+    return map(brightness, 0, 255, min, max);
+}
+float getHueMapped(float min, float max) {
+    return mapfloat(rgb2hsv_approximate(solidColor).hue, 0.0, 255.0, min, max);
+}
+uint8_t getHueMapped(uint8_t min, uint8_t max) {
+    return map(rgb2hsv_approximate(solidColor).hue, 0, 255, min, max);
+}
+float getSatMapped(float min, float max) {
+    return map(rgb2hsv_approximate(solidColor).sat, 0.0, 255.0, min, max);
+}
+uint8_t getSatMapped(uint8_t min, uint8_t max) {
+    return map(rgb2hsv_approximate(solidColor).sat, 0, 255, min, max);
+}
+
+float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // ######################### pattern functions ###########################
 
 void strandTest()
@@ -1792,19 +1843,7 @@ void strandTest()
 
 void showSolidColor()
 {
-    #ifdef ENABLE_HOMEY_SUPPORT
-    if (homeySolidColor == true) {
-        uint8_t tmpHue = (uint8_t) mapfloat(homeyHue, 0.0, 1.0, 0.0, 255.0);
-        uint8_t tmpSat = (uint8_t) mapfloat(homeySat, 0.0, 1.0, 0.0, 255.0);
-        fill_solid(leds, NUM_LEDS, CHSV(tmpHue, tmpSat, 255));
-    } else {
-    #endif
-
-        fill_solid(leds, NUM_LEDS, solidColor);
-
-    #ifdef ENABLE_HOMEY_SUPPORT
-    }
-    #endif
+    fill_solid(leds, NUM_LEDS, solidColor);
 }
 
 // Patterns from FastLED example DemoReel100: https://github.com/FastLED/FastLED/blob/master/examples/DemoReel100/DemoReel100.ino
@@ -4648,10 +4687,17 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
         if (strcmp(key, "state") == 0) {
             String val = v.as<String>();
-            setPower((val == "ON") ? 1 : 0);
+            val.toLowerCase();
+            if (val == String("1") || val == String("on")) {
+                setPower(1);
+            } else if (val == String("0") || val == String("off")) {
+                setPower(0);
+            } else if (val == String("toggle")) {
+                setPower((power == 1) ? 0 : 1);
+            }
         }
         if (strcmp(key, "brightness") == 0) {
-            int val = v.as<int>();
+            uint8_t val = v.as<uint8_t>();
             setBrightness(val);
         }
         if (strcmp(key, "autoplay") == 0){
@@ -4660,14 +4706,22 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         }
         if (strcmp(key, "speed") == 0){
             int val = v.as<int>();
-            speed = val;
+            setSpeed(val);
+        }
+        if (strcmp(key, "hue") == 0){
+            uint8_t val = v.as<uint8_t>();
+            setSolidColorHue(val, false);
+        }
+        if (strcmp(key, "saturation") == 0){
+            uint8_t val = v.as<uint8_t>();
+            setSolidColorSat(val, false);
         }
         if (strcmp(key, "effect") == 0) {
             String val = v.as<String>();
             setPatternName(val);
         }
         if (strcmp(key, "color") == 0) {
-            int cr, cb, cg;
+            uint8_t cr, cb, cg;
             JsonObject val = v.as<JsonObject>();
             for (JsonPair o : val) {
                 const char* ckey = o.key().c_str();
@@ -4693,11 +4747,13 @@ void mqttSendStatus() {
     if (cfg.MQTTEnabled != 1) return;
 
     StaticJsonDocument<128> JSONencoder;
-    JSONencoder["state"] = (power == 1 ? "ON" : "OFF"),
+      JSONencoder["state"] = (power == 1 ? "ON" : "OFF"),
       JSONencoder["brightness"] = brightness,
       JSONencoder["effect"] = patterns[currentPatternIndex].name,
       JSONencoder["autoplay"] = autoplay,
       JSONencoder["speed"] = speed;
+      JSONencoder["hue"] = getHueMapped((uint8_t)0, (uint8_t)255);
+      JSONencoder["saturation"] = getSatMapped((uint8_t)0, (uint8_t)255);
 
     uint8_t JSONmessage[128];
     size_t n = serializeJson(JSONencoder, JSONmessage);
@@ -4712,33 +4768,32 @@ void mqttSendStatus() {
 // ###################### Homey support functions ########################
 
 #ifdef ENABLE_HOMEY_SUPPORT
+// here we do some conversion between Homey values and convert them to RGB
 void homeyLightOnoff( void ) {
     setPower(Homey.value.toInt());
     SERIAL_DEBUG_LNF("Homey set power: %s", (power == 1) ? "on" : "off")
 }
-
+// hsv2rgb_rainbow
 void homeyLightDim( void ) {
     float mappedBrightness = 0.0;
-    homeyBrightness = Homey.value.toFloat();
+    float homeyBrightness = Homey.value.toFloat();
     mappedBrightness = mapfloat(homeyBrightness, 0.0, 1.0, 0.0, 255.0);
-    SERIAL_DEBUG_LNF("Homey set brightness: %f == %d", homeyBrightness, mappedBrightness)
+    SERIAL_DEBUG_LNF("Homey set brightness: %0.2f == %d", homeyBrightness, (uint8_t) mappedBrightness)
     setBrightness((uint8_t) mappedBrightness);
 }
 
 void homeyLightHue( void ) {
-    homeyHue = Homey.value.toFloat();
-    SERIAL_DEBUG_LNF("Homey set hue: %f", homeyHue)
+    float homeyHue = Homey.value.toFloat();
+    SERIAL_DEBUG_LNF("Homey set hue: %0.3f", homeyHue)
+    setSolidColorHue((uint8_t) mapfloat(homeyHue, 0.0, 1.0, 0.0, 255.0), true);
     setAutoplay(false);
-    setPatternName(String("Solid Color"));
-    homeySolidColor = true;
 }
 
 void homeyLightSaturation( void ) {
-    homeySat = Homey.value.toFloat();
-    SERIAL_DEBUG_LNF("Homey set saturation: %f", homeySat)
+    float homeySat = Homey.value.toFloat();
+    SERIAL_DEBUG_LNF("Homey set saturation: %0.2f", homeySat)
+    setSolidColorSat((uint8_t) mapfloat(homeySat, 0.0, 1.0, 0.0, 255.0), true);
     setAutoplay(false);
-    setPatternName(String("Solid Color"));
-    homeySolidColor = true;
 }
 
 void homeyNext( void ) {
@@ -4751,9 +4806,5 @@ void homeyPrev( void ) {
     SERIAL_DEBUG_LN(F("Homey set previous pattern"))
     setAutoplay(false);
     adjustPattern(false);
-}
-
-float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 #endif
