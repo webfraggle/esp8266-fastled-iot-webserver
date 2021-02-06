@@ -105,7 +105,7 @@ All of my recent project were merged into one including most of the features. A 
 
 
 
-### 24.02.2019, NodeRED Update (Depricated)
+### 24.02.2019, NodeRED Update (Deprecated)
 
 - Node-RED integration was added
 - Alexa support via NodeRED
@@ -124,6 +124,7 @@ Features
 * **Sound Reactive Mode**
 * Adjust the brightness, color and patterns
 * Play over 30+ patterns in Autoplay
+* ESP32 support (experimental)
 
 
 
