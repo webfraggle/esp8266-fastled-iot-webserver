@@ -1349,7 +1349,7 @@ void loop() {
                 char mqttSetTopicS[25];
                 strcpy(mqttSetTopicS, "~");
                 strcpy(mqttSetTopicS, cfg.MQTTSetTopic);
-                
+
                 DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
                     JSONencoder["name"] = cfg.MQTTDeviceName,
@@ -1375,6 +1375,8 @@ void loop() {
                 strcpy(mqttConfigTopic, "/config");
                 if (mqttClient.beginPublish(mqttConfigTopic, n, true) == true) {
                     Serial.println("Configuration Publishing Begun");
+                    Serial.print("Configuration Topic :");
+                    Serial.println(mqttConfigTopic);
                     if (serializeJson(JSONencoder, mqttClient) == n){
                          Serial.println("Configuration Sent");
                     }
@@ -4599,6 +4601,8 @@ void sendStatus()
     uint8_t JSONmessage[128];
     size_t n = serializeJson(JSONencoder, JSONmessage);
     if (!mqttProcessing){
+        Serial.print("Status Topic :");
+        Serial.println(cfg.MQTTTopic);
         mqttClient.publish(cfg.MQTTTopic, JSONmessage, n, true);
     }
 }
