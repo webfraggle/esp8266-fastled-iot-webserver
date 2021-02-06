@@ -157,7 +157,39 @@ The ESP8266WebServer will automatically serve any .gz file.  The file index.htm.
 
 ### REST Web services
 
-The firmware implements basic [RESTful web services](https://en.wikipedia.org/wiki/Representational_state_transfer) using the ESP8266WebServer library.  Current values are requested with HTTP GETs, and values are set with POSTs using query string parameters.  It can run in connected or standalone access point modes.
+The firmware implements basic [RESTful web services](https://en.wikipedia.org/wiki/Representational_state_transfer) using the ESP8266WebServer library.  Current values are requested with HTTP GETs, and values are set with POSTs using query string parameters.
+
+#### URL Endpoints
+|Endpoint|Method|Keys|Attribute|Description|
+|--------|------|---|---------|-----------|
+/config.json|GET|N/A|N/A|returns device config in JSON format
+/reboot|GET/POST|N/A|N/A|reboots the device
+/power|GET/POST|value|on, 1, 0, off, toggle|switch state of LEDs
+/speed|GET/POST|value|0-255|set speed of pattern/effect
+/brightness|GET/POST|value|0-255|set LED brightness
+/solidColor|GET/POST|r,g,b|0-255 each|set RGB values for solid color
+/hue|GET/POST|value|0-255|set hue: [FastLED HUE](https://github.com/FastLED/FastLED/wiki/FastLED-HSV-Colors)
+/saturation|GET/POST|value|0-255|set saturation
+/patternName|GET/POST|value|pattern name|define a certain pattern, pattern names can be retreived via `/config.json` endpoint
+/paletteName|GET/POST|value|palette name|defien a certain palette which is used by some effects, palette names can be retreived via `/config.json` endpoint
+/autoplay|GET/POST|value|on, 1, 0, off, toggle|switch autoplay LED patterns on or off
+/autoplayDuration|GET/POST|value|1-255|set time in seconds each pattern should be autoplayed
+/twinkleDensity|GET/POST|value|0-255|set density of some twinkle effects
+/cooling|GET/POST|value|0-255|set sparking intensity for `Fire` and `Water` pattern
+/sparking|GET/POST|value|0-255|set cooling intensity for `Fire` and `Water` pattern
+/reset|POST|type|wifi, all|wipe config just for `wifi` or `all` settings incl. wifi
+/settings|POST|ssid|WiFi SSID|set a new WiFi SSID
+/settings|POST|password|WiFi password|set a new WiFi password
+/settings|POST|hostname|device hostname|set a new device hostname
+/settings|POST|mqtt-enabled\*|1, 0|enable/disable MQTT support
+/settings|POST|mqtt-hostname\*|hostname|set the hostname of the MQTT server to connect to
+/settings|POST|mqtt-port\*|1-65535|set the MQTT port to connect to
+/settings|POST|mqtt-user\*|a username|set the MQTT username to be used during MQTT connection
+/settings|POST|mqtt-password\*|a password|set the MQTT password to be used during MQTT connection
+/settings|POST|mqtt-topic\*|a topic|set the MQTT topic to be used during MQTT connection
+/settings|POST|mqtt-device-name\*|device hostname|set the MQTT topic to be used during MQTT connection
+
+>\* MQTT support has to be enabled during firmware build (disabled by default). All MQTT settings (except mqtt-enable) trigger a reboot
 
 ### MQTT Syntax
 
@@ -168,23 +200,32 @@ example : "homeassistant/light/nanoleafs/set" in the case of the nanoleafs if yo
 
 **payload :** this is a json formatted string with parameters, you can send one or multiple parameters, please note that to change most of them the light must be on, so sending an on command on every request other than off is a good idea.  
 
-**commands :**  
-    state       : values  ON or OFF  
-    brightness  : values  1 to 255  
-    autoplay    : values  ON or OFF  
-    speed       : values  1 to 255  
-    effect      : values  Pattern name as a quoted string.  
-    color       : values  [1..255,1..255,1..255]  
+**commands :**
+|Key         |Value            |
+|------------|-----------------|
+|state       |on, off, toggle
+|brightness  |1 to 255
+|autoplay    |on, off, toggle
+|speed       |1 to 255
+|effect      |Pattern name as a quoted string.
+|color       |[1..255,1..255,1..255]
+|hue         |1 to 255
+|saturation  |1 to 255
 
-**command examples :**  
-    turn lights on            : `{"state": "ON"}`  
-    turn lights off           : `{"state": "OFF"}`  
-    Set brightness to 50%     : `{"state": "ON", "brightness": 127}`  
-    Set animation speed to 16 : `{"speed": "16"}`  
-    Set animation autoplay on : `{"autoplay": "ON"}`  
-    Set animation pattern     : `{"state": "ON", "effect": "Sinelon"}`  
-    Set a solid color         : `{"state": "ON", "color": {"r": 72, "g": 255, "b": 163}}`  
+**command examples :**
+|example                   |JSON payload|
+|--------------------------|------------|
+|turn lights on            |`{"state": "ON"}`
+|turn lights off           |`{"state": "OFF"}`
+|Set brightness to 50%     |`{"state": "ON", "brightness": 127}`
+|Set animation speed to 16 |`{"speed": "16"}`
+|Set animation autoplay on |`{"autoplay": "ON"}`
+|Set animation pattern     |`{"state": "ON", "effect": "Sinelon"}`
+|Set a solid color         |`{"state": "ON", "color": {"r": 72, "g": 255, "b": 163}}`
 
-you can combine multiple commands in a single payload, for example  
-    Set lights on, with a brightness of 50%, animation speed of 25, animation autplay off and the pride pattern.  
-    ex : `{"state": "ON", "brightness": 127, "speed": "25", "autoplay": "OFF", "effect": "Pride"}`  
+**You can combine multiple commands in a single payload, for example:**
+
+Set lights on, with a brightness of 50%, animation speed of 25, animation autplay off and the pride pattern.
+```json
+{"state": "ON", "brightness": 127, "speed": "25", "autoplay": "OFF", "effect": "Pride"}
+```

@@ -1146,8 +1146,6 @@ void setup() {
     webServer.on("/twinkleDensity", []() {
         String value = webServer.arg("value");
         twinkleDensity = value.toInt();
-        if (twinkleDensity < 0) twinkleDensity = 0;
-        else if (twinkleDensity > 255) twinkleDensity = 255;
         SERIAL_DEBUG_LNF("Setting: twinkle density %d", twinkleDensity)
         broadcastInt("twinkleDensity", twinkleDensity);
         sendInt(twinkleDensity);
@@ -1220,7 +1218,14 @@ void setup() {
 
     webServer.on("/autoplay", []() {
         String value = webServer.arg("value");
-        setAutoplay(value.toInt());
+        value.toLowerCase();
+        if (value == String("1") || value == String("on")) {
+            setAutoplay(1);
+        } else if (value == String("0") || value == String("off")) {
+            setAutoplay(0);
+        } else if (value == String("toggle")) {
+            setAutoplay((autoplay == 1) ? 0 : 1);
+        }
         sendInt(autoplay);
         });
 
@@ -4688,9 +4693,9 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         if (strcmp(key, "state") == 0) {
             String val = v.as<String>();
             val.toLowerCase();
-            if (val == String("1") || val == String("on")) {
+            if (val == String("on")) {
                 setPower(1);
-            } else if (val == String("0") || val == String("off")) {
+            } else if (val == String("off")) {
                 setPower(0);
             } else if (val == String("toggle")) {
                 setPower((power == 1) ? 0 : 1);
@@ -4702,7 +4707,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         }
         if (strcmp(key, "autoplay") == 0){
             String val = v.as<String>();
-            setAutoplay((val == "ON") ? 1 : 0);
+            val.toLowerCase();
+            if (val == String("on")) {
+                setAutoplay(1);
+            } else if (val == String("off")) {
+                setAutoplay(0);
+            } else if (val == String("toggle")) {
+                setAutoplay((autoplay == 1) ? 0 : 1);
+            }
         }
         if (strcmp(key, "speed") == 0){
             int val = v.as<int>();
