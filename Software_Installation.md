@@ -1,6 +1,8 @@
 # ESP8266-FastLED-IoT-Webserver
 
-This document describes the necessary steps from setting up the development environment to uploading the compiled software to the esp8266.  
+This document describes the necessary steps from setting up the development environment to uploading the compiled software to the esp8266.
+
+ESP32 currently got experimental support.
 
 ### Dependencies
 
@@ -27,22 +29,23 @@ The video wasn't updated for the new update, so the library versions are incorre
 
 1. The code requires a recent version of the **Arduino IDE**, which can be downloaded [here]( https://www.arduino.cc/en/Main/Software ).
 
-2. The ESP8266 boards need to be added to the Arduino IDE:
-   Click on *File >> Preferences* and paste the following URL into the **Additional Boards Manager URLs** field: `http://arduino.esp8266.com/stable/package_esp8266com_index.json` 
+2. The ESP8266 / ESP32 boards need to be added to the Arduino IDE:\
+   Click on *File >> Preferences* and paste the following URL into the **Additional Boards Manager URLs** field: `http://arduino.esp8266.com/stable/package_esp8266com_index.json`\
+   In case you you want to use a ESP32 base board you need to add following URL as well (comma separated) `https://dl.espressif.com/dl/package_esp32_index.json`
    
    ![](software_screenshots/board_manager_urls.png?raw=true)
 
-3. Install the CH340/341 USB Driver
+3. Install the CH340/341 USB Driver (only needed if your computer doesn't recognize your board by default)
    
    - Download and install the driver from e.g. [Arduined]( https://www.arduined.eu/ch340-windows-8-driver-download/ )
 
-4. The Boards need be installed in the Arduino IDE
-   Click on *Tools >> Board >> Boards Manager* and install **esp8266, version 2.7.0**
+4. The Boards need be installed in the Arduino IDE\
+   Click on *Tools >> Board >> Boards Manager* and install **esp8266** or **esp32** for ESP32 boards
    
    ![](software_screenshots/board_manager.png?raw=true)
 
-5. The LED Library **FastLED** is also required
-   Click on *Sketch >> Include Library >> Manage Libraries* and install **FastLED, version 3.3.2**
+5. The LED Library **FastLED** is also required\
+   Click on *Sketch >> Include Library >> Manage Libraries* and install **FastLED**
    
    ![](software_screenshots/FastLED.png?raw=true)
    
@@ -51,20 +54,21 @@ The video wasn't updated for the new update, so the library versions are incorre
    
    ![](software_screenshots/wifi-manager.jpg?raw=true)
 
-7. Install the  *ESP8266FS* **Sketch Data Upload Tool**: 
+7. Install the  *ESP8266FS* or *ESP32* **Sketch Data Upload Tool**: 
 
-   > - Download the tool: https://github.com/esp8266/arduino-esp8266fs-plugin/releases.
+   > - Download the tool:
+   >   * ESP8266: https://github.com/esp8266/arduino-esp8266fs-plugin/releases.
+   >   * ESP32: https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/
    >
    > - In your Arduino sketchbook directory, create `tools` directory if it doesn't exist yet
    >
-   > - Unpack the tool into `tools` directory (the path will look like `/Arduino/tools/ESP8266FS/tool/esp8266fs.jar`)
+   > - Unpack the tool into `tools` directory (the path will look like `/Arduino/tools/ESP8266FS/tool/esp8266fs.jar` or `/Arduino/tools/ESP32FS/tool/esp32fs.jar`)
    >
    > - Restart Arduino IDE
-   > 
-   >   // [source]( http://arduino.esp8266.com/Arduino/versions/2.3.0/doc/filesystem.html#uploading-files-to-file-system )
+
 
 8. *(Optional)* Install *Espalexa* for Amazon Alexa Support
-   Click on *Sketch >> Include Library >> Manage Libraries* and install **Espalexa, version 2.4.4**
+   Click on *Sketch >> Include Library >> Manage Libraries* and install **Espalexa**
    
    ![](software_screenshots/espalexa.png?raw=true)
 
