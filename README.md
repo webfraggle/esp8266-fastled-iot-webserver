@@ -79,38 +79,6 @@ All of my recent project were merged into one including most of the features. A 
 * Project link, IoT Bottle Lighting Pad:		https://www.thingiverse.com/thing:4461313
 
 
-
-## Changelog
-
-### 07.05.2020, Major Code rewrite and merge of projects, audio visualization
-
-- **New features:**
-  - **Audio Visualization with a Windows Desktop Application (C#, WPF)** [here](https://github.com/NimmLor/IoT-Audio-Visualization-Center)
-  - multicast DNS by @WarDrake
-  - OTA Support
-  - MQTT/Homeassistant integration by @WarDrake
-  - Serial Ambilight for usage behind a TV
-  - Support of Desk Lamp, 7-Segment Clock, Animated RGB Logos, Generic LED-Strip
-  - WebUI fits now on 1MB devices (esp-01)
-  - Dark mode for WebUI
-
-### 01.02.2020, Native Alexa Update
-
-- **NodeRED** part is now **DEPRECATED**
-- The Nanoleaf Replica allows now for **NATIVE** Alexa support without the need of an extra Raspberry Pi. When added to the Smart Home devices in the Alexa app, the nanoleafs will appear as Phillips Hue devices.
-- Added Strobe Pattern
-- Added Sound Reactive support
-- Some code cleanup and new parameters to configure
-- New step by step installation instructions ([Software_Installation.md](Software_Installation.md))
-
-
-
-### 24.02.2019, NodeRED Update (Deprecated)
-
-- Node-RED integration was added
-- Alexa support via NodeRED
-
-
 Installation
 --------
 **FOR INSTALLATION REFER TO THE [Software_Installation.md](Software_Installation.md)**
