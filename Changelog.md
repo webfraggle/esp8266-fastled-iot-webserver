@@ -8,7 +8,8 @@
 - calculate delay per frame dynamically to keep frame rate steady #125
 - adds Serial DEBUG mode and improves DEBUG information #124
 - disable certain web interface controls if not available/used by pattern #92
-- Adds ESP32 support (experimental) #77
+- adds ESP32 support (experimental) #77
+- adds more controls (speed/pattern/twinkle density) to more patterns #112
 
 ### Bugfixes:
 - fix compile errors when MQTT support was enabled #109
