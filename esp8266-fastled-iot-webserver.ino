@@ -484,6 +484,7 @@ CRGBPalette16 gTargetPalette(gGradientPalettes[0]);
 CRGBPalette16 IceColors_p = CRGBPalette16(CRGB::Black, CRGB::Blue, CRGB::Aqua, CRGB::White);
 
 uint8_t currentPatternIndex = 2; // Index number of which pattern is current
+uint8_t previousPatternIndex = 2; // Index number of last pattern
 uint8_t autoplay = 0;
 
 uint8_t autoplayDuration = 10;
@@ -496,6 +497,36 @@ uint8_t slowHue = 0; // slower gHue
 uint8_t verySlowHue = 0; // very slow gHue
 
 CRGB solidColor = CRGB::Blue;
+
+typedef struct {
+    CRGBPalette16 palette;
+    String name;
+} PaletteAndName;
+typedef PaletteAndName PaletteAndNameList[];
+
+const CRGBPalette16 palettes[] = {
+    RainbowColors_p,
+    RainbowStripeColors_p,
+    CloudColors_p,
+    LavaColors_p,
+    OceanColors_p,
+    ForestColors_p,
+    PartyColors_p,
+    HeatColors_p
+};
+
+const uint8_t paletteCount = ARRAY_SIZE(palettes);
+
+const String paletteNames[paletteCount] = {
+    "Rainbow",
+    "Rainbow Stripe",
+    "Cloud",
+    "Lava",
+    "Ocean",
+    "Forest",
+    "Party",
+    "Heat",
+};
 
 // I just don't know why. Anyone an idea?
 void IfThisIsRemovedTheScatchWillFailToBuild(void) {};
@@ -514,8 +545,8 @@ typedef struct {
 } PatternAndName;
 typedef PatternAndName PatternAndNameList[];
 
-#include "Twinkles.h"
 #include "TwinkleFOX.h"
+#include "Twinkles.h"
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 
@@ -541,35 +572,34 @@ PatternAndNameList patterns = {
     // animation patterns                            // palet  speed  color  spark  twinkle
     { pride,                  "Pride",                  false, false, false, false, false},
     { colorWaves,             "Color Waves",            false, false, false, false, false},
-    { rainbow,                "Horizontal Rainbow",     false, false, false, false, false},
-    { rainbowSolid,           "Solid Rainbow",          false, false, false, false, false},
-    { confetti,               "Confetti",               false, false, false, false, false},
+    { rainbow,                "Horizontal Rainbow",     false, true,  false, false, false},
+    { rainbowSolid,           "Solid Rainbow",          false, true,  false, false, false},
+    { confetti,               "Confetti",               false, true,  false, false, false},
     { sinelon,                "Sinelon",                true,  true,  false, false, false},
     { bpm,                    "Beat",                   true,  true,  false, false, false},
-    { juggle,                 "Juggle",                 false, false, false, false, false},
-    { fire,                   "Fire",                   false, false, false, true,  false},
-    { water,                  "Water",                  false, false, false, true,  false},
-    { strobe,                 "Strobe",                 false, true,  true,  false, false},
+    { juggle,                 "Juggle",                 false, true,  false, false, false},
+    { fire,                   "Fire",                   false, true,  false, true,  false},
+    { water,                  "Water",                  false, true,  false, true,  false},
+    { solid_strobe,           "Strobe",                 false, true,  true,  false, false},
     { rainbow_strobe,         "Rainbow Strobe",         false, true,  false, false, false},
     { smooth_rainbow_strobe,  "Smooth Rainbow Strobe",  false, true,  false, false, false},
 
     // DigitalJohnson patterns                       // palet  speed  color  spark  twinkle
-    { rainbowRoll,            "Rainbow Roll",           false, false, false, false, false},
+    { rainbowRoll,            "Rainbow Roll",           false, true,  false, false, false},
     { rainbowBeat,            "Rainbow Beat",           false, true,  false, false, false},
-    { randomPaletteFades,     "Palette Fades",          true,  false, false, false, false},
-    { rainbowChase,           "Rainbow Chase",          false, false, false, false, false},
-    { randomDots,             "Rainbow Dots",           false, false, false, false, false},
-    { randomFades,            "Rainbow Fades",          false, false, false, false, false},
-    { policeLights,           "Police Lights",          false, false, false, false, false},
-    { glitter,                "Glitter",                false, false, false, false, false},
-    { snowFlakes,             "Snow Flakes",            false, false, false, false, false},
+    { randomPaletteFades,     "Palette Fades",          true,  true,  false, false, false},
+    { rainbowChase,           "Rainbow Chase",          false, true,  false, false, false},
+    { randomDots,             "Rainbow Dots",           false, true,  false, false, false},
+    { randomFades,            "Rainbow Fades",          false, true,  false, false, false},
+    { policeLights,           "Police Lights",          false, true,  false, false, false},
+    { glitter,                "Glitter",                false, true,  false, false, false},
+    { snowFlakes,             "Snow Flakes",            false, true,  false, false, false},
     { lightning,              "Lightning",              false, false, false, false, false},
 
     // twinkle patterns                              // palet  speed  color  spark  twinkle
-    { rainbowTwinkles,        "Rainbow Twinkles",       false, false, false, false, false},
-    { snowTwinkles,           "Snow Twinkles",          false, false, false, false, false},
-    { cloudTwinkles,          "Cloud Twinkles",         false, false, false, false, false},
-    { incandescentTwinkles,   "Incandescent Twinkles",  false, false, false, false, false},
+    { paletteTwinkles,        "Palette Twinkles",       true,  true,  false, false, true},
+    { snowTwinkles,           "Snow Twinkles",          false, true,  false, false, true},
+    { incandescentTwinkles,   "Incandescent Twinkles",  false, true,  false, false, true},
 
     // TwinkleFOX patterns                                 // palet  speed  color  spark  twinkle
     { retroC9Twinkles,        "Retro C9 Twinkles",            false, true,  false, false, true},
@@ -640,38 +670,7 @@ PatternAndNameList patterns = {
     { showSolidColor,               "Solid Color",        false, false, true,  false, false}
 };
 
-
 const uint8_t patternCount = ARRAY_SIZE(patterns);
-
-typedef struct {
-    CRGBPalette16 palette;
-    String name;
-} PaletteAndName;
-typedef PaletteAndName PaletteAndNameList[];
-
-const CRGBPalette16 palettes[] = {
-    RainbowColors_p,
-    RainbowStripeColors_p,
-    CloudColors_p,
-    LavaColors_p,
-    OceanColors_p,
-    ForestColors_p,
-    PartyColors_p,
-    HeatColors_p
-};
-
-const uint8_t paletteCount = ARRAY_SIZE(palettes);
-
-const String paletteNames[paletteCount] = {
-    "Rainbow",
-    "Rainbow Stripe",
-    "Cloud",
-    "Lava",
-    "Ocean",
-    "Forest",
-    "Party",
-    "Heat",
-};
 
 #include "Fields.h"
 
@@ -1453,10 +1452,9 @@ void loop() {
     EVERY_N_MILLISECONDS(40) {
         // slowly blend the current palette to the next
         nblendPaletteTowardPalette(gCurrentPalette, gTargetPalette, 8);
-        gHue++;  // slowly cycle the "base color" through the rainbow
-        if (gHue % 16 == 0)slowHue++;
-        if (gHue % 127 == 0)verySlowHue++;
     }
+
+    updateHue();
 
     if (autoplay && (millis() > autoPlayTimeout)) {
         adjustPattern(true);
@@ -1464,7 +1462,7 @@ void loop() {
     }
 
     if (power == 0) {
-        fill_solid(leds, NUM_LEDS, CRGB::Black);
+        fadeToBlackBy(leds, NUM_LEDS, 5);
     } else {
         // Call the current pattern function once, updating the 'leds' array
         patterns[currentPatternIndex].pattern();
@@ -1511,6 +1509,7 @@ void loop() {
         loop_counter = 0;
     }
     loop_counter += 1;
+    previousPatternIndex = currentPatternIndex;
 }
 
 void loadConfig() {
@@ -1702,22 +1701,19 @@ void setAutoplayDuration(uint8_t value)
 // increase or decrease the current pattern number, and wrap around at the ends
 void adjustPattern(bool up)
 {
+    if (autoplay == 1) {
 #ifdef RANDOM_AUTOPLAY_PATTERN
-    if (autoplay == 1)
-    {
         uint8_t lastpattern = currentPatternIndex;
         while (currentPatternIndex == lastpattern)
         {
             uint8_t newpattern = random8(0, patternCount - 1);
             if (newpattern != lastpattern) currentPatternIndex = newpattern;
         }
-    }
 #else // RANDOM_AUTOPLAY_PATTERN
-    if (up)
         currentPatternIndex++;
-    else
-        currentPatternIndex--;
 #endif
+    }
+
     if (autoplay == 0)
     {
         if (up)
@@ -1761,12 +1757,10 @@ void setPattern(uint8_t value)
         setConfigChanged();
     }
 
-
     SERIAL_DEBUG_LNF("Setting: pattern: %s", patterns[currentPatternIndex].name.c_str())
 
     broadcastInt("pattern", currentPatternIndex);
 }
-
 
 void setPatternName(String name)
 {
@@ -1870,6 +1864,47 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 
 // ######################### pattern functions ###########################
 
+void updateHue()
+{
+    uint8_t hueUpdateInterval = 40;
+    uint8_t hueStep = 1;
+    static unsigned long nextHueUpdate = millis();
+
+    // adds speed control for some Rainbow patterns
+    if (patterns[currentPatternIndex].name == String("Horizontal Rainbow") or \
+        patterns[currentPatternIndex].name == String("Solid Rainbow") or \
+        patterns[currentPatternIndex].name == String("Rainbow Roll")) {
+
+        if (speed < 128) {
+            hueUpdateInterval = map(speed, 0, 255, 100, 0);
+        } else {
+            hueUpdateInterval = map(speed, 0, 255, 200, 0);
+            hueStep = 2;
+        }
+    }
+
+    if (millis() > nextHueUpdate) {
+        gHue += hueStep;  // slowly cycle the "base color" through the rainbow
+        if (gHue % 16 == 0)slowHue++;
+        if (gHue % 127 == 0)verySlowHue++;
+        nextHueUpdate = millis() + hueUpdateInterval;
+    }
+}
+
+bool updatePatternBasedOnSpeedSetting(uint8_t max_delay)
+{
+    uint8_t updateInterval = 0;
+    static unsigned long nexUpdate = millis();
+
+    updateInterval = map(speed, 0, 255, max_delay, 0);
+
+    if (millis() > nexUpdate) {
+        nexUpdate = millis() + updateInterval;
+        return true;
+    }
+
+    return false;
+}
 void strandTest()
 {
     static uint8_t i = 0;
@@ -1893,20 +1928,6 @@ void showSolidColor()
 
 // Patterns from FastLED example DemoReel100: https://github.com/FastLED/FastLED/blob/master/examples/DemoReel100/DemoReel100.ino
 
-void rainbow_strobe()
-{
-    if (autoplay == 1)adjustPattern(true);
-    static bool p = false;
-    static long lm = 0;
-    if (millis() - lm > (128 - (speed / 2)))
-    {
-        if (p) fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));
-        else fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
-        lm = millis();
-        p = !p;
-    }
-}
-
 void smooth_rainbow_strobe()
 {
     if (autoplay == 1)adjustPattern(true);
@@ -1914,7 +1935,7 @@ void smooth_rainbow_strobe()
     fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, beat));
 }
 
-void strobe()
+void strobe(bool rainbow)
 {
     if (autoplay == 1)adjustPattern(true);
     static bool p = false;
@@ -1922,10 +1943,26 @@ void strobe()
     if (millis() - lm > (128 - (speed / 2)))
     {
         if (p) fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));
-        else fill_solid(leds, NUM_LEDS, solidColor);
+        else {
+            if (rainbow) {
+                fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
+            } else {
+                fill_solid(leds, NUM_LEDS, solidColor);
+            }
+        }
         lm = millis();
         p = !p;
     }
+}
+
+void rainbow_strobe()
+{
+    strobe(true);
+}
+
+void solid_strobe()
+{
+    strobe(false);
 }
 
 void rainbow()
@@ -1957,6 +1994,9 @@ void rainbowSolid()
 
 void confetti()
 {
+    if (updatePatternBasedOnSpeedSetting(100) == false)
+        return;
+
     // random colored speckles that blink in and fade smoothly
     fadeToBlackBy(leds, NUM_LEDS, 10);
 #if LED_DEVICE_TYPE == 4
@@ -2020,12 +2060,15 @@ void juggle()
     static uint8_t lastSecond = 99;  // Static variable, means it's only defined once. This is our 'debounce' variable.
     uint8_t secondHand = (millis() / 1000) % 30; // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
 
+    if (updatePatternBasedOnSpeedSetting(100) == false)
+        return;
+
     if (lastSecond != secondHand) { // Debounce to make sure we're not repeating an assignment.
         lastSecond = secondHand;
         switch (secondHand) {
-        case  0: numdots = 1; basebeat = 20; hueinc = 16; faderate = 2; thishue = 0; break; // You can change values here, one at a time , or altogether.
+        //case  0: numdots = 1; basebeat = 20; hueinc = 16; faderate = 2; thishue = 0; break; // You can change values here, one at a time , or altogether.
         case 10: numdots = 4; basebeat = 10; hueinc = 16; faderate = 8; thishue = 128; break;
-        case 20: numdots = 8; basebeat = 3; hueinc = 0; faderate = 8; thishue = random8(); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
+        case 20: numdots = 8; basebeat = 5; hueinc = 0; faderate = 8; thishue = random8(); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
         case 30: break;
         }
     }
@@ -2115,6 +2158,9 @@ void radialPaletteShift()
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
 void heatMap(CRGBPalette16 palette, bool up)
 {
+    if (updatePatternBasedOnSpeedSetting(50) == false)
+        return;
+
     fill_solid(leds, NUM_LEDS, CRGB::Black);
 
     // Add entropy to random number generator; we use a lot of it.
@@ -2271,7 +2317,6 @@ void palettetest(CRGB* ledarray, uint16_t numleds, const CRGBPalette16& gCurrent
 
 TBlendType    blendType;
 TBlendType currentBlending; // Current blending type
-static bool firstRun = true; // First run flag used by some patterns
 
 struct timer_struct
 {
@@ -2320,6 +2365,9 @@ void rainbowBeat()
 // Uses colors from a palette of colors
 void randomPaletteFades()
 {
+    if (updatePatternBasedOnSpeedSetting(100) == false)
+        return;
+
     uint16_t i = random16(0, (NUM_LEDS - 1)); // Pick a random LED
     {
         uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
@@ -2336,25 +2384,29 @@ void randomPaletteFades()
 // rainbow colors rotate in the opposite direction.
 void rainbowChase()
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     static int q = 0;
     fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
+
     for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
     {
         leds[((i + q) + 1)] = CRGB(0, 0, 0);
         leds[((i + q) + 2)] = CRGB(0, 0, 0);
     }
-    if (2 > q)
-    {
+    if (2 > q) {
         q++;
-    }
-    else
-    {
+    } else {
         q = 0;
     }
 }
 
 void randomDots() // Similar to randomFades(), colors flash on/off quickly
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     uint16_t pos;
     pos = random16(0, (NUM_LEDS - 1));
     if (CRGB(0, 0, 0) == CRGB(leds[pos]))
@@ -2367,6 +2419,9 @@ void randomDots() // Similar to randomFades(), colors flash on/off quickly
 // Same as randomPaletteFades() but with completely random colors
 void randomFades()
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     uint16_t pos;
     pos = random16(0, (NUM_LEDS - 1));
     if (CRGB(0, 0, 0) == CRGB(leds[pos]))
@@ -2379,6 +2434,9 @@ void randomFades()
 // Same as randomDots() but with red and blue flashes only
 void policeLights()
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     fadeToBlackBy(leds, NUM_LEDS, 128);
     uint16_t p = random16(0, (NUM_LEDS - 1));
     uint8_t n = (1 & random8());
@@ -2395,18 +2453,22 @@ void policeLights()
 // Same as randomDots() but faster white flashes only
 void glitter()
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     fadeToBlackBy(leds, NUM_LEDS, 128);
     if (random8() < 225)
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
-    //fixme: do not slow down the whole loop
-    //FastLED.delay(255 - speed);
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
 void snowFlakes()
 {
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
     uint8_t shader;
     for (int x = 0; NUM_LEDS > x; x++)
     {
@@ -2414,16 +2476,22 @@ void snowFlakes()
         leds[x] = CRGB(shader, shader, shader);
     }
     leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
-    delay(40);
 }
 
 // Simulates lightning with randomly timed and random size bolts
 void lightning()
 {
     static timer_struct boltTimer;
-    if (firstRun)
+    if (previousPatternIndex != currentPatternIndex)
     {
-        firstRun = false;
+        // slowly fade previous patern to black
+        for (uint8_t i = 0; i < 90; i++) {
+            fadeToBlackBy( leds, NUM_LEDS, 5);
+            LEDS.show();
+            delay(2);
+        }
+        fill_solid(leds, NUM_LEDS, CRGB::Black);
+        LEDS.show();
         boltTimer.period = 0;
         boltTimer.mark = millis();
     }
