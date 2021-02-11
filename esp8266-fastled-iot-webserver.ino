@@ -1343,12 +1343,12 @@ void loop() {
                 Serial.println("Subscribing to MQTT Topics \n");
                 char mqttSetTopicC[85];
                 strcpy(mqttSetTopicC, cfg.MQTTTopic);
-                strcpy(mqttSetTopicC, cfg.MQTTSetTopic);
+                strcat(mqttSetTopicC, cfg.MQTTSetTopic);
                 mqttClient.subscribe(mqttSetTopicC);
 
                 char mqttSetTopicS[25];
                 strcpy(mqttSetTopicS, "~");
-                strcpy(mqttSetTopicS, cfg.MQTTSetTopic);
+                strcat(mqttSetTopicS, cfg.MQTTSetTopic);
 
                 DynamicJsonDocument JSONencoder(4096);
                     JSONencoder["~"] = cfg.MQTTTopic,
@@ -1371,12 +1371,10 @@ void loop() {
                 }
                 size_t n = measureJson(JSONencoder);
                 char mqttConfigTopic[85];
-                strcpy(mqttConfigTopic, cfg.MQTTTopic);
-                strcpy(mqttConfigTopic, "/config");
+                strcat(mqttConfigTopic, cfg.MQTTTopic);
+                strcat(mqttConfigTopic, "/config");
                 if (mqttClient.beginPublish(mqttConfigTopic, n, true) == true) {
                     Serial.println("Configuration Publishing Begun");
-                    Serial.print("Configuration Topic :");
-                    Serial.println(mqttConfigTopic);
                     if (serializeJson(JSONencoder, mqttClient) == n){
                          Serial.println("Configuration Sent");
                     }
@@ -1501,7 +1499,7 @@ void loadConfig()
         strncpy(cfg.MQTTUser, MQTT_USER, sizeof(cfg.MQTTUser));
         strncpy(cfg.MQTTPass, MQTT_PASS, sizeof(cfg.MQTTPass));
         strncpy(cfg.MQTTTopic, MQTT_TOPIC, sizeof(cfg.MQTTTopic));
-        strncpy(cfg.MQTTSetTopic, MQTT_TOPIC, sizeof(cfg.MQTTSetTopic));
+        strncpy(cfg.MQTTSetTopic, MQTT_TOPIC_SET, sizeof(cfg.MQTTSetTopic));
         strncpy(cfg.MQTTDeviceName, MQTT_DEVICE_NAME, sizeof(cfg.MQTTDeviceName));
         save_config = true;
     }
