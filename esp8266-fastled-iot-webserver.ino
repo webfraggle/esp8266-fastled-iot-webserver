@@ -273,29 +273,24 @@ if you have connected the ring first it should look like this: const int twpOffs
     #define MQTT_PORT 1883
     #define MQTT_USER "MyUserName"
     #define MQTT_PASS ""
+    #define MQTT_TOPIC_SET "/set"                                       // MQTT Topic to subscribe to for changes(Home Assistant)
     #if LED_DEVICE_TYPE == 0
         #define MQTT_TOPIC "homeassistant/light/ledstrip"               // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "Ledstrip"
     #elif LED_DEVICE_TYPE == 1
         #define MQTT_TOPIC "homeassistant/light/ledmatrix"              // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "Led Matrix"
     #elif LED_DEVICE_TYPE == 2
         #define MQTT_TOPIC "homeassistant/light/7-segment-clock"        // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "7 Segment Clock"
     #elif LED_DEVICE_TYPE == 3
         #define MQTT_TOPIC "homeassistant/light/desklamp"               // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "Led Desk Lamp"
     #elif LED_DEVICE_TYPE == 4
         #define MQTT_TOPIC "homeassistant/light/nanoleafs"              // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "Nanoleafs"
     #elif LED_DEVICE_TYPE == 5
         #define MQTT_TOPIC "homeassistant/light/ledlogo"                // MQTT Topic to Publish to for state and config (Home Assistant)
-        #define MQTT_TOPIC_SET "/set"                                   // MQTT Topic to subscribe to for changes(Home Assistant)
         #define MQTT_DEVICE_NAME "Animated Logo"
     #endif
     #define MQTT_UNIQUE_IDENTIFIER WiFi.macAddress()                    // A Unique Identifier for the device in Homeassistant (MAC Address used by default)
@@ -317,6 +312,9 @@ if you have connected the ring first it should look like this: const int twpOffs
 \___/ \____//_/|_//_/  /___/ \___/   /___//_/|_//____/ 
 -----------------------------------------------------------------------------------------------------------//
 ###########################################################################################################*/
+
+#define VERSION "4.5beta"
+#define VERSION_DATE "2020-02-XX"
 
 // define debugging MACROS
 #if LED_DEBUG != 0
@@ -718,6 +716,7 @@ void setup() {
 
     SERIAL_DEBUG_EOL
     SERIAL_DEBUG_LN(F("System Information:"))
+    SERIAL_DEBUG_LNF("Version: %s (%s)", VERSION, VERSION_DATE)
     SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
     SERIAL_DEBUG_LNF("SDK: %s", system_get_sdk_version())
 #ifdef ESP8266
@@ -1414,7 +1413,7 @@ void loop() {
                     JSONencoder["name"] = cfg.MQTTDeviceName,
                     JSONencoder["dev"]["ids"] = MQTT_UNIQUE_IDENTIFIER,
                     JSONencoder["dev"]["mf"] = "Surrbradl08",
-                    JSONencoder["dev"]["mdl"] = "0.4.4",
+                    JSONencoder["dev"]["mdl"] = VERSION,
                     JSONencoder["dev"]["name"] = cfg.MQTTDeviceName,
                     JSONencoder["stat_t"] = "~",
                     JSONencoder["cmd_t"] = mqttSetTopicS,
