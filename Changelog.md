@@ -21,6 +21,7 @@
 - fixes an compile error if LED_DEVICE_TYPE 5 was selected #73
 - fixes Wifi setup if `LED_DEVICE_TYPE 2` was selected #100
 - fixes HomeAssistant not recognizing separate esp boards #148
+- Improve javascript console error logging #150
 
 ### House keeping:
 - remove half integrated simple page #128
