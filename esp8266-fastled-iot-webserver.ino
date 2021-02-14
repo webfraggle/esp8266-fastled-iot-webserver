@@ -67,7 +67,7 @@ extern "C" {
 #define MILLI_AMPS          10000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
+#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
@@ -313,8 +313,8 @@ if you have connected the ring first it should look like this: const int twpOffs
 -----------------------------------------------------------------------------------------------------------//
 ###########################################################################################################*/
 
-#define VERSION "4.5beta"
-#define VERSION_DATE "2020-02-XX"
+#define VERSION "4.5"
+#define VERSION_DATE "2020-02-14"
 
 // define debugging MACROS
 #if LED_DEBUG != 0

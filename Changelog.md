@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.5 - XX.02.2021, Config web page, ESP32 support, Homey integration
+## 4.5 - 14.02.2021, Config web page, ESP32 support, Homey integration
 
 ### Features:
 - adds settings page to remove secrets.h and configure Wifi, hostname and MQTT settings #94
@@ -10,6 +10,7 @@
 - disable certain web interface controls if not available/used by pattern #92
 - adds ESP32 support (experimental) #77
 - adds more controls (speed/pattern/twinkle density) to more patterns #112
+- UI / CSS Rework changes the sliders #132
 
 ### Bugfixes:
 - fix compile errors when MQTT support was enabled #109
