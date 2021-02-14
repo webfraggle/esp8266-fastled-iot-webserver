@@ -51,8 +51,8 @@ $(document).ready(function() {
 
       $("#status").html("Ready");
     })
-    .fail(function(errorThrown) {
-      console.log("error: " + errorThrown);
+    .fail(function(jqXHR, textStatus, error) {
+      console.log("Request failed: " + textStatus + " responseText: " + jqXHR.responseText);
     });
 });
 
