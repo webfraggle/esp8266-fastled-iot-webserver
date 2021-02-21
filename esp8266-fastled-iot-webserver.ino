@@ -326,7 +326,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 #define SERIAL_DEBUG_LNF(format, ...) SERIAL_DEBUG_BOL SERIAL_DEBUG_ADDF(format, __VA_ARGS__) SERIAL_DEBUG_EOL
 #else
 #define SERIAL_DEBUG_ADD(s) do{}while(0);
-#define SERIAL_DEBUG_ADDF(s) do{}while(0);
+#define SERIAL_DEBUG_ADDF(format, ...) do{}while(0);
 #define SERIAL_DEBUG_EOL do{}while(0);
 #define SERIAL_DEBUG_BOL do{}while(0);
 #define SERIAL_DEBUG_LN(s) do{}while(0);
