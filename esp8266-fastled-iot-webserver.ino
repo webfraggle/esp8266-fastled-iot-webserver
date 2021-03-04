@@ -1297,7 +1297,22 @@ void setup() {
         webServer.send(200, "text/plain", "");
         }, handleFileUpload);
         */
+
+    //
+    #ifdef ESP8266
     webServer.serveStatic("/", SPIFFS, "/", "max-age=86400");
+
+    #elif defined(ESP32)
+    // ESP32 seems to have issues behaving like ESP8288 when serving static files
+    // this way we define every file to be served explicitly
+    webServer.serveStatic("/", SPIFFS, "/index.htm", "max-age=86400");
+    File fs_root = SPIFFS.open("/");
+    File fs_file = fs_root.openNextFile();
+    while (fs_file) {
+        webServer.serveStatic(fs_file.name(), SPIFFS, fs_file.name(), "max-age=86400");
+        fs_file = fs_root.openNextFile();
+    }
+    #endif
 
 #ifdef ENABLE_ALEXA_SUPPORT
     espalexa.begin(&webServer);
