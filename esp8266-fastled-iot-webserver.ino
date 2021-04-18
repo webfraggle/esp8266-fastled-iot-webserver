@@ -64,14 +64,14 @@ extern "C" {
 //#define CLK_PIN             D5                        // Only required when using 4-pin SPI-based LEDs
 #define CORRECTION          UncorrectedColor            // If colors are weird use TypicalLEDStrip
 #define COLOR_ORDER         GRB                         // Change this if colors are swapped (in my case, red was swapped with green)
-#define MILLI_AMPS          10000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
+#define MILLI_AMPS          8000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
 #define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
-#define LED_DEVICE_TYPE 0               // The following types are available
+#define LED_DEVICE_TYPE 1                // The following types are available
 
 /*
     0: Generic LED-Strip: a regular LED-Strip without any special arrangement (and Infinity Mirror + Bottle Lighting Pad)
@@ -2364,8 +2364,20 @@ unsigned long patternDelay[ARRAY_SIZE(patterns)] =
 
 void rainbowRoll()
 {
+#if LED_DEVICE_TYPE == 1
+    CRGB tmp_leds[LENGTH];
+    fill_rainbow(tmp_leds, 32, gHue, 7);
+    for (int i = 0; i < LENGTH; i++)
+    {
+        for (int j = 0; j < HEIGHT; j++)
+        {
+          leds[(i*HEIGHT)+j]=tmp_leds[i];
+        }
+    }
+#else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 7);
+#endif
 }
 
 void rainbowBeat()
