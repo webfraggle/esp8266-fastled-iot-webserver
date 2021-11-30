@@ -2048,9 +2048,20 @@ void confetti()
 
 void sinelon()
 {
+#if FALCON == 1
+    static uint8_t    numleds = FALCON_LEDS_PER_ROW;
+#else
+    static uint8_t    numleds = NUM_LEDS;
+#endif   
     // a colored dot sweeping back and forth, with fading trails
-    fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(speed / 4, 0, NUM_LEDS);
+    
+    #if FALCON == 1
+      fadeToBlackBy(leds, numleds+1, 20);
+      int pos = beatsin16(speed / 4, 0, numleds)+1;
+    #else
+      fadeToBlackBy(leds, numleds, 20);
+      int pos = beatsin16(speed / 4, 0, numleds);
+    #endif 
     static int prevpos = 0;
     CRGB color = ColorFromPalette(palettes[currentPaletteIndex], gHue, 255);
     if (pos < prevpos) {
@@ -2060,6 +2071,9 @@ void sinelon()
         fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
     }
     prevpos = pos;
+    #if FALCON == 1
+        copyPattern();
+    #endif 
 }
 
 void bpm()
