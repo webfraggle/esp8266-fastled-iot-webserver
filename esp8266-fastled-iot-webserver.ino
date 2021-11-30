@@ -106,10 +106,12 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 378
+    #define NUM_LEDS 117
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
+    #define FALCON  1
+    #define FALCON_LEDS_PER_ROW 29
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
     #define HEIGHT 8
@@ -445,7 +447,9 @@ EspalexaDevice* alexa_main;
 #include <Homey.h>              //Athom Homey library
 #endif
 
-CRGB leds[NUM_LEDS];
+//CRGB *realleds[NUM_LEDS];
+CRGBArray<NUM_LEDS> leds;
+//CRGBSet leds[realleds, NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
 uint8_t brightnessMap[brightnessCount] = { 5, 32, 64, 128, 255 };
@@ -768,6 +772,9 @@ void setup() {
     #else
         wifiManager.setDebugOutput(false);
     #endif
+    wifiManager.setConnectTimeout(70);
+
+    wifiManager.setTimeout(80);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
@@ -1366,6 +1373,7 @@ void loop() {
             Serial.print("INFO: WiFi Connected! Open http://");
             Serial.print(WiFi.localIP());
             Serial.println(" in your browser");
+            //wifiManager.resetSettings();
 #ifdef ENABLE_MULTICAST_DNS
             if (!MDNS.begin(cfg.hostname)) {
                 Serial.println("\nERROR: problem while setting up MDNS responder! \n");
@@ -1995,6 +2003,9 @@ void rainbow()
         gHue = gHue > 255 ? gHue - 255 : gHue;
         fill_solid(leds + i * PIXELS_PER_LEAF, PIXELS_PER_LEAF, CHSV(myHue, 255, 255));
     }
+#elif FALCON == 1
+    leds(1,FALCON_LEDS_PER_ROW).fill_rainbow(gHue, 255 / FALCON_LEDS_PER_ROW);
+    copyPattern();
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 255 / NUM_LEDS);
@@ -2139,6 +2150,8 @@ void pride()
     uint16_t brightnesstheta16 = sPseudotime;
 #if LED_DEVICE_TYPE == 4
     for (uint16_t i = 0; i < (LEAFCOUNT * 3); i++) {
+#elif FLACON == 1
+    for (uint16_t i = 0; i < FALCON_LEDS_PER_ROW; i++) {
 #else
     for (uint16_t i = 0; i < NUM_LEDS; i++) {
 #endif
@@ -2161,6 +2174,10 @@ void pride()
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 64);
         }
+#elif FALCON == 1
+        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
+        nblend(leds[pixelnumber+1], newcolor, 64);
+        copyPattern();
 #else
         pixelnumber = (NUM_LEDS - 1) - pixelnumber;
         nblend(leds[pixelnumber], newcolor, 64);
@@ -2315,6 +2332,10 @@ void colorwaves(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 128);
         }
+#elif FALCON == 1
+        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
+        nblend(leds[pixelnumber+1], newcolor, 128);
+        copyPattern();
 #else
         pixelnumber = (numleds - 1) - pixelnumber;
 
@@ -2421,7 +2442,7 @@ void rainbowChase()
         return;
 
     static int q = 0;
-    fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
+    //fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
 
     for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
     {
@@ -3164,6 +3185,14 @@ uint8_t XY (uint8_t x, uint8_t y) {
 
 #endif
 
+#if FALCON == 1
+void copyPattern()
+{
+  leds(FALCON_LEDS_PER_ROW+1, FALCON_LEDS_PER_ROW*2) = leds(FALCON_LEDS_PER_ROW,1);
+  leds(FALCON_LEDS_PER_ROW*2+1, FALCON_LEDS_PER_ROW*3) = leds(1,FALCON_LEDS_PER_ROW);
+  leds(FALCON_LEDS_PER_ROW*3+1, FALCON_LEDS_PER_ROW*4) = leds(FALCON_LEDS_PER_ROW,1);
+}
+#endif
 
 // #################### Visualization
 
