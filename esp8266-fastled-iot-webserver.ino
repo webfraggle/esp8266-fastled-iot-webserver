@@ -106,10 +106,13 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 378
+    #define NUM_LEDS 117
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
+    #define FALCON  1
+    #define FALCON_LEDS_PER_ROW 29
+    #define FALCON_LEDS_OFFSET 1
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
     #define HEIGHT 8
@@ -445,7 +448,9 @@ EspalexaDevice* alexa_main;
 #include <Homey.h>              //Athom Homey library
 #endif
 
-CRGB leds[NUM_LEDS];
+//CRGB *realleds[NUM_LEDS];
+CRGBArray<NUM_LEDS> leds;
+//CRGBSet leds[realleds, NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
 uint8_t brightnessMap[brightnessCount] = { 5, 32, 64, 128, 255 };
@@ -579,7 +584,7 @@ PatternAndNameList patterns = {
     { confetti,               "Confetti",               false, true,  false, false, false},
     { sinelon,                "Sinelon",                true,  true,  false, false, false},
     { bpm,                    "Beat",                   true,  true,  false, false, false},
-    { juggle,                 "Juggle",                 false, true,  false, false, false},
+    //{ juggle,                 "Juggle",                 false, true,  false, false, false},
     { fire,                   "Fire",                   false, true,  false, true,  false},
     { water,                  "Water",                  false, true,  false, true,  false},
     { solid_strobe,           "Strobe",                 false, true,  true,  false, false},
@@ -590,7 +595,7 @@ PatternAndNameList patterns = {
     { rainbowRoll,            "Rainbow Roll",           false, true,  false, false, false},
     { rainbowBeat,            "Rainbow Beat",           false, true,  false, false, false},
     { randomPaletteFades,     "Palette Fades",          true,  true,  false, false, false},
-    { rainbowChase,           "Rainbow Chase",          false, true,  false, false, false},
+    //{ rainbowChase,           "Rainbow Chase",          false, true,  false, false, false},
     { randomDots,             "Rainbow Dots",           false, true,  false, false, false},
     { randomFades,            "Rainbow Fades",          false, true,  false, false, false},
     { policeLights,           "Police Lights",          false, true,  false, false, false},
@@ -768,6 +773,9 @@ void setup() {
     #else
         wifiManager.setDebugOutput(false);
     #endif
+    wifiManager.setConnectTimeout(70);
+
+    wifiManager.setTimeout(80);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
@@ -1366,6 +1374,7 @@ void loop() {
             Serial.print("INFO: WiFi Connected! Open http://");
             Serial.print(WiFi.localIP());
             Serial.println(" in your browser");
+            //wifiManager.resetSettings();
 #ifdef ENABLE_MULTICAST_DNS
             if (!MDNS.begin(cfg.hostname)) {
                 Serial.println("\nERROR: problem while setting up MDNS responder! \n");
@@ -1995,6 +2004,9 @@ void rainbow()
         gHue = gHue > 255 ? gHue - 255 : gHue;
         fill_solid(leds + i * PIXELS_PER_LEAF, PIXELS_PER_LEAF, CHSV(myHue, 255, 255));
     }
+#elif FALCON == 1
+    leds(FALCON_LEDS_OFFSET,FALCON_LEDS_PER_ROW).fill_rainbow(gHue, 255 / FALCON_LEDS_PER_ROW);
+    copyPattern();
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 255 / NUM_LEDS);
@@ -2037,9 +2049,20 @@ void confetti()
 
 void sinelon()
 {
+#if FALCON == 1
+    static uint8_t    numleds = FALCON_LEDS_PER_ROW;
+#else
+    static uint8_t    numleds = NUM_LEDS;
+#endif   
     // a colored dot sweeping back and forth, with fading trails
-    fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(speed / 4, 0, NUM_LEDS);
+    
+    #if FALCON == 1
+      fadeToBlackBy(leds, numleds+FALCON_LEDS_OFFSET, 20);
+      int pos = beatsin16(speed / 4, 0, numleds)+FALCON_LEDS_OFFSET;
+    #else
+      fadeToBlackBy(leds, numleds, 20);
+      int pos = beatsin16(speed / 4, 0, numleds);
+    #endif 
     static int prevpos = 0;
     CRGB color = ColorFromPalette(palettes[currentPaletteIndex], gHue, 255);
     if (pos < prevpos) {
@@ -2049,6 +2072,9 @@ void sinelon()
         fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
     }
     prevpos = pos;
+    #if FALCON == 1
+        copyPattern();
+    #endif 
 }
 
 void bpm()
@@ -2061,9 +2087,16 @@ void bpm()
         for (int i2 = 0; i2 < PIXELS_PER_LEAF; i2++)leds[i * PIXELS_PER_LEAF + i2] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
     }
 #else
+  #if FALCON == 1
+    for (int i = FALCON_LEDS_OFFSET; i < FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET; i++) {
+        leds[i] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
+        copyPattern();
+    }
+  #else
     for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
     }
+   #endif
 #endif
 }
 
@@ -2139,6 +2172,8 @@ void pride()
     uint16_t brightnesstheta16 = sPseudotime;
 #if LED_DEVICE_TYPE == 4
     for (uint16_t i = 0; i < (LEAFCOUNT * 3); i++) {
+#elif FLACON == 1
+    for (uint16_t i = 0; i < FALCON_LEDS_PER_ROW; i++) {
 #else
     for (uint16_t i = 0; i < NUM_LEDS; i++) {
 #endif
@@ -2161,6 +2196,10 @@ void pride()
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 64);
         }
+#elif FALCON == 1
+        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
+        nblend(leds[pixelnumber+1], newcolor, 64);
+        copyPattern();
 #else
         pixelnumber = (NUM_LEDS - 1) - pixelnumber;
         nblend(leds[pixelnumber], newcolor, 64);
@@ -2315,6 +2354,10 @@ void colorwaves(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 128);
         }
+#elif FALCON == 1
+        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
+        nblend(leds[pixelnumber+1], newcolor, 128);
+        copyPattern();
 #else
         pixelnumber = (numleds - 1) - pixelnumber;
 
@@ -2378,6 +2421,9 @@ void rainbowRoll()
           leds[(i*HEIGHT)+j]=tmp_leds[i];
         }
     }
+#elif FALCON == 1
+    leds(FALCON_LEDS_OFFSET,FALCON_LEDS_PER_ROW).fill_rainbow(gHue, 7);
+    copyPattern();
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 7);
@@ -2388,10 +2434,18 @@ void rainbowBeat()
 {
     // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
     uint8_t beat = beatsin8(speed, 64, 255); // Beat advances and retreats in a sine wave
+#if FALCON == 1    
+    for (int i = FALCON_LEDS_OFFSET; i < FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET; i++)
+    {
+        leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
+        copyPattern();
+    }
+#else
     for (int i = 0; i < NUM_LEDS; i++)
     {
         leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
     }
+#endif
 }
 
 // LEDs turn on one at a time at full brightness and slowly fade to black
@@ -2400,7 +2454,19 @@ void randomPaletteFades()
 {
     if (updatePatternBasedOnSpeedSetting(100) == false)
         return;
-
+#if FALCON == 1
+    uint16_t i = random16(FALCON_LEDS_OFFSET, (FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET - 1)); // Pick a random LED
+    {
+        uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
+        if (CRGB(0, 0, 0) == CRGB(leds[i])) // Only set new color to LED that is off
+        {
+            leds[i] = ColorFromPalette(palettes[currentPaletteIndex], colorIndex, 255, currentBlending);
+            leds(FALCON_LEDS_OFFSET, FALCON_LEDS_PER_ROW).blur1d(32); // Blur colors with neighboring LEDs
+        }
+    }
+    leds(FALCON_LEDS_OFFSET, FALCON_LEDS_PER_ROW).fadeToBlackBy(8); // Slowly fade LEDs to black
+    copyPattern();
+#else
     uint16_t i = random16(0, (NUM_LEDS - 1)); // Pick a random LED
     {
         uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
@@ -2411,29 +2477,30 @@ void randomPaletteFades()
         }
     }
     fadeToBlackBy(leds, NUM_LEDS, 8); // Slowly fade LEDs to black
+#endif
 }
 
 // Theater style chasing lights rotating in one direction while the
 // rainbow colors rotate in the opposite direction.
-void rainbowChase()
-{
-    if (updatePatternBasedOnSpeedSetting(200) == false)
-        return;
-
-    static int q = 0;
-    fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
-
-    for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
-    {
-        leds[((i + q) + 1)] = CRGB(0, 0, 0);
-        leds[((i + q) + 2)] = CRGB(0, 0, 0);
-    }
-    if (2 > q) {
-        q++;
-    } else {
-        q = 0;
-    }
-}
+//void rainbowChase()
+//{
+//    if (updatePatternBasedOnSpeedSetting(200) == false)
+//        return;
+//
+//    static int q = 0;
+//    //fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
+//    
+//    for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
+//    {
+//        leds[((i + q) + 1)] = CRGB(0, 0, 0);
+//        leds[((i + q) + 2)] = CRGB(0, 0, 0);
+//    }
+//    if (2 > q) {
+//        q++;
+//    } else {
+//        q = 0;
+//    }
+//}
 
 void randomDots() // Similar to randomFades(), colors flash on/off quickly
 {
@@ -3164,6 +3231,14 @@ uint8_t XY (uint8_t x, uint8_t y) {
 
 #endif
 
+#if FALCON == 1
+void copyPattern()
+{
+  leds(FALCON_LEDS_PER_ROW+1, FALCON_LEDS_PER_ROW*2) = leds(FALCON_LEDS_PER_ROW,1);
+  leds(FALCON_LEDS_PER_ROW*2+1, FALCON_LEDS_PER_ROW*3) = leds(1,FALCON_LEDS_PER_ROW);
+  leds(FALCON_LEDS_PER_ROW*3+1, FALCON_LEDS_PER_ROW*4) = leds(FALCON_LEDS_PER_ROW,1);
+}
+#endif
 
 // #################### Visualization
 
