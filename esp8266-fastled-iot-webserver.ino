@@ -3257,7 +3257,7 @@ bool parseUdp()
         nopackage = 0;
         // receive incoming UDP packets
         SERIAL_DEBUG_LNF("Received %d bytes from %s, port %d", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort())
-        int len = Udp.readBytes(incomingPacket, PACKET_LENGTH);
+        int len = Udp.read(incomingPacket, PACKET_LENGTH);
         if (len > 0)
         {
             incomingPacket[len] = '\0';
