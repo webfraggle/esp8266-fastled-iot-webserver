@@ -67,7 +67,7 @@ extern "C" {
 #define MILLI_AMPS          8000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
+#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
@@ -106,12 +106,12 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 117
+    #define NUM_LEDS 110
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
     #define FALCON  1
-    #define FALCON_LEDS_PER_ROW 29
+    #define FALCON_LEDS_PER_ROW 110
     #define FALCON_LEDS_OFFSET 1
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
@@ -450,6 +450,7 @@ EspalexaDevice* alexa_main;
 
 //CRGB *realleds[NUM_LEDS];
 CRGBArray<NUM_LEDS> leds;
+CRGBArray<240> realleds;
 //CRGBSet leds[realleds, NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
@@ -694,7 +695,7 @@ void setup() {
     Serial.print("\n\n");
 
 #if LED_TYPE == WS2812 || LED_TYPE == WS2812B || LED_TYPE == WS2811 || LED_TYPE == WS2813 || LED_TYPE == NEOPIXEL
-    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);         // WS2812 (Neopixel)
+    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(realleds, 240);         // WS2812 (Neopixel)
 #elif defined CLK_PIN
     FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS); // for APA102 (Dotstar)
 #else
@@ -3234,9 +3235,10 @@ uint8_t XY (uint8_t x, uint8_t y) {
 #if FALCON == 1
 void copyPattern()
 {
-  leds(FALCON_LEDS_PER_ROW+1, FALCON_LEDS_PER_ROW*2) = leds(FALCON_LEDS_PER_ROW,1);
-  leds(FALCON_LEDS_PER_ROW*2+1, FALCON_LEDS_PER_ROW*3) = leds(1,FALCON_LEDS_PER_ROW);
-  leds(FALCON_LEDS_PER_ROW*3+1, FALCON_LEDS_PER_ROW*4) = leds(FALCON_LEDS_PER_ROW,1);
+  //realleds(183, 213) = leds(0,30);
+  //realleds(152, 182) = leds(30,0);
+  //realleds(1, 48) = leds(31,78);
+  //realleds(49, 78) = leds(0,30);
 }
 #endif
 
