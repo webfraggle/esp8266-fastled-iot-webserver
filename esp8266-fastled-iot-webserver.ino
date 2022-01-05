@@ -1495,7 +1495,9 @@ void loop() {
         // Call the current pattern function once, updating the 'leds' array
         patterns[currentPatternIndex].pattern();
     }
-
+    #if COPYPATTERN == 1
+       copyPattern();
+    #endif
     FastLED.show();
 
     // init time
@@ -1962,9 +1964,6 @@ void smooth_rainbow_strobe()
     if (autoplay == 1)adjustPattern(true);
     uint8_t beat = beatsin8(speed, 0, 255);
     fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, beat));
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void strobe(bool rainbow)
@@ -1990,17 +1989,11 @@ void strobe(bool rainbow)
 void rainbow_strobe()
 {
     strobe(true);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void solid_strobe()
 {
     strobe(false);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void rainbow()
@@ -2015,9 +2008,6 @@ void rainbow()
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 255 / NUM_LEDS);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 #endif
 }
 
@@ -2026,17 +2016,11 @@ void rainbowWithGlitter()
     // built-in FastLED rainbow, plus some random sparkly glitter
     rainbow();
     addGlitter(80);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void rainbowSolid()
 {
     fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void confetti()
@@ -2059,9 +2043,6 @@ void confetti()
     // leds[pos] += CHSV( gHue + random8(64), 200, 255);
     leds[pos] += ColorFromPalette(palettes[currentPaletteIndex], gHue + random8(64));
 #endif
-#if COPYPATTERN == 1
-  copyPattern();
-#endif
 }
 
 void sinelon()
@@ -2078,9 +2059,6 @@ void sinelon()
         fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
     }
     prevpos = pos;
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 
@@ -2097,9 +2075,6 @@ void bpm()
     for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 #endif
 }
 
@@ -2138,25 +2113,16 @@ void juggle()
         leds[beatsin16(basebeat + i + numdots, 0, NUM_LEDS)] += CHSV(gHue + curhue, thissat, thisbright);
         curhue += hueinc;
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void fire()
 {
     heatMap(HeatColors_p, true);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void water()
 {
     heatMap(IceColors_p, false);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Pride2015 by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
@@ -2209,9 +2175,6 @@ void pride()
 #else
         pixelnumber = (NUM_LEDS - 1) - pixelnumber;
         nblend(leds[pixelnumber], newcolor, 64);
-        #if COPYPATTERN == 1
-          copyPattern();
-        #endif
 #endif
     }
 }
@@ -2222,9 +2185,6 @@ void radialPaletteShift()
         // leds[i] = ColorFromPalette( gCurrentPalette, gHue + sin8(i*16), brightness);
         leds[i] = ColorFromPalette(gCurrentPalette, i + gHue, 255, LINEARBLEND);
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
@@ -2308,9 +2268,6 @@ void colorWaves()
     colorwaves(leds, LEAFCOUNT * 3, gCurrentPalette);
 #else
     colorwaves(leds, NUM_LEDS, gCurrentPalette);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 #endif
 }
 
@@ -2373,9 +2330,6 @@ void colorwaves(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
         pixelnumber = (numleds - 1) - pixelnumber;
 
         nblend(ledarray[pixelnumber], newcolor, 128);
-        #if COPYPATTERN == 1
-          copyPattern();
-        #endif
 #endif
     }
 }
@@ -2438,9 +2392,6 @@ void rainbowRoll()
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 7);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 #endif
 }
 
@@ -2452,9 +2403,6 @@ void rainbowBeat()
     {
         leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // LEDs turn on one at a time at full brightness and slowly fade to black
@@ -2473,9 +2421,6 @@ void randomPaletteFades()
         }
     }
     fadeToBlackBy(leds, NUM_LEDS, 8); // Slowly fade LEDs to black
-  #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Theater style chasing lights rotating in one direction while the
@@ -2498,9 +2443,6 @@ void rainbowChase()
     } else {
         q = 0;
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 void randomDots() // Similar to randomFades(), colors flash on/off quickly
@@ -2515,9 +2457,6 @@ void randomDots() // Similar to randomFades(), colors flash on/off quickly
         leds[pos] = CHSV((random8() % 256), 200, 255);
     }
     fadeToBlackBy(leds, NUM_LEDS, 64);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Same as randomPaletteFades() but with completely random colors
@@ -2533,9 +2472,6 @@ void randomFades()
         leds[pos] = CHSV((random8() % 256), 200, 255);
     }
     fadeToBlackBy(leds, NUM_LEDS, 8);
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Same as randomDots() but with red and blue flashes only
@@ -2555,9 +2491,6 @@ void policeLights()
     {
         leds[p] = CRGB(0, 0, 255);
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Same as randomDots() but faster white flashes only
@@ -2571,9 +2504,6 @@ void glitter()
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
@@ -2589,9 +2519,6 @@ void snowFlakes()
         leds[x] = CRGB(shader, shader, shader);
     }
     leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 // Simulates lightning with randomly timed and random size bolts
@@ -2650,9 +2577,6 @@ void lightning()
         boltTimer.period = (unsigned long)(random16(1500, 5000));
         boltTimer.mark = millis();
     }
-    #if COPYPATTERN == 1
-      copyPattern();
-    #endif
 }
 
 //######################### Patterns by Resseguie/FastLED-Patterns END #########################
@@ -4381,6 +4305,9 @@ bool checkIncommingData() {
     while (!Serial.available()) {
         if (OFF_TIMEOUT > 0 && endTime < millis()) {
             memset(leds, 0, NUM_LEDS * sizeof(struct CRGB));
+            #if COPYPATTERN == 1
+               copyPattern();
+            #endif
             FastLED.show();
             dataAvailable = false;
             endTime = millis() + OFF_TIMEOUT;
@@ -4480,6 +4407,9 @@ void ambilight() {
         // shows new values
         if (transmissionSuccess) {
             endTime = millis() + OFF_TIMEOUT;
+            #if COPYPATTERN == 1
+               copyPattern();
+            #endif
             FastLED.show();
         }
     }
