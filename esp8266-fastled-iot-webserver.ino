@@ -67,7 +67,7 @@ extern "C" {
 #define MILLI_AMPS          8000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-#define LED_DEBUG 1                     // enable debug messages on serial console, set to 0 to disable debugging
+#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
@@ -106,13 +106,11 @@ extern "C" {
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 110
+    #define NUM_LEDS 109
     //#define NUM_LEDS 33
     //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
-    #define FALCON  1
-    #define FALCON_LEDS_PER_ROW 110
-    #define FALCON_LEDS_OFFSET 1
+    #define COPYPATTERN  1
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
     #define HEIGHT 8
@@ -585,7 +583,7 @@ PatternAndNameList patterns = {
     { confetti,               "Confetti",               false, true,  false, false, false},
     { sinelon,                "Sinelon",                true,  true,  false, false, false},
     { bpm,                    "Beat",                   true,  true,  false, false, false},
-    //{ juggle,                 "Juggle",                 false, true,  false, false, false},
+    { juggle,                 "Juggle",                 false, true,  false, false, false},
     { fire,                   "Fire",                   false, true,  false, true,  false},
     { water,                  "Water",                  false, true,  false, true,  false},
     { solid_strobe,           "Strobe",                 false, true,  true,  false, false},
@@ -596,7 +594,7 @@ PatternAndNameList patterns = {
     { rainbowRoll,            "Rainbow Roll",           false, true,  false, false, false},
     { rainbowBeat,            "Rainbow Beat",           false, true,  false, false, false},
     { randomPaletteFades,     "Palette Fades",          true,  true,  false, false, false},
-    //{ rainbowChase,           "Rainbow Chase",          false, true,  false, false, false},
+    { rainbowChase,           "Rainbow Chase",          false, true,  false, false, false},
     { randomDots,             "Rainbow Dots",           false, true,  false, false, false},
     { randomFades,            "Rainbow Fades",          false, true,  false, false, false},
     { policeLights,           "Police Lights",          false, true,  false, false, false},
@@ -1964,6 +1962,9 @@ void smooth_rainbow_strobe()
     if (autoplay == 1)adjustPattern(true);
     uint8_t beat = beatsin8(speed, 0, 255);
     fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, beat));
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void strobe(bool rainbow)
@@ -1989,11 +1990,17 @@ void strobe(bool rainbow)
 void rainbow_strobe()
 {
     strobe(true);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void solid_strobe()
 {
     strobe(false);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void rainbow()
@@ -2005,12 +2012,12 @@ void rainbow()
         gHue = gHue > 255 ? gHue - 255 : gHue;
         fill_solid(leds + i * PIXELS_PER_LEAF, PIXELS_PER_LEAF, CHSV(myHue, 255, 255));
     }
-#elif FALCON == 1
-    leds(FALCON_LEDS_OFFSET,FALCON_LEDS_PER_ROW).fill_rainbow(gHue, 255 / FALCON_LEDS_PER_ROW);
-    copyPattern();
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 255 / NUM_LEDS);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 #endif
 }
 
@@ -2019,11 +2026,17 @@ void rainbowWithGlitter()
     // built-in FastLED rainbow, plus some random sparkly glitter
     rainbow();
     addGlitter(80);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void rainbowSolid()
 {
     fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void confetti()
@@ -2046,24 +2059,16 @@ void confetti()
     // leds[pos] += CHSV( gHue + random8(64), 200, 255);
     leds[pos] += ColorFromPalette(palettes[currentPaletteIndex], gHue + random8(64));
 #endif
+#if COPYPATTERN == 1
+  copyPattern();
+#endif
 }
 
 void sinelon()
 {
-#if FALCON == 1
-    static uint8_t    numleds = FALCON_LEDS_PER_ROW;
-#else
-    static uint8_t    numleds = NUM_LEDS;
-#endif   
     // a colored dot sweeping back and forth, with fading trails
-    
-    #if FALCON == 1
-      fadeToBlackBy(leds, numleds+FALCON_LEDS_OFFSET, 20);
-      int pos = beatsin16(speed / 4, 0, numleds)+FALCON_LEDS_OFFSET;
-    #else
-      fadeToBlackBy(leds, numleds, 20);
-      int pos = beatsin16(speed / 4, 0, numleds);
-    #endif 
+    fadeToBlackBy(leds, NUM_LEDS, 20);
+    int pos = beatsin16(speed / 4, 0, NUM_LEDS);
     static int prevpos = 0;
     CRGB color = ColorFromPalette(palettes[currentPaletteIndex], gHue, 255);
     if (pos < prevpos) {
@@ -2073,10 +2078,11 @@ void sinelon()
         fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
     }
     prevpos = pos;
-    #if FALCON == 1
-        copyPattern();
-    #endif 
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
+
 
 void bpm()
 {
@@ -2088,64 +2094,69 @@ void bpm()
         for (int i2 = 0; i2 < PIXELS_PER_LEAF; i2++)leds[i * PIXELS_PER_LEAF + i2] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
     }
 #else
-  #if FALCON == 1
-    for (int i = FALCON_LEDS_OFFSET; i < FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET; i++) {
-        leds[i] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
-        copyPattern();
-    }
-  #else
     for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = ColorFromPalette(palette, gHue + (i * 2), beat - gHue + (i * 10));
     }
-   #endif
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 #endif
 }
 
-//void juggle()
-//{
-//    static uint8_t    numdots = 4; // Number of dots in use.
-//    static uint8_t   faderate = 2; // How long should the trails be. Very low value = longer trails.
-//    static uint8_t     hueinc = 255 / numdots - 1; // Incremental change in hue between each dot.
-//    static uint8_t    thishue = 0; // Starting hue.
-//    static uint8_t     curhue = 0; // The current hue
-//    static uint8_t    thissat = 255; // Saturation of the colour.
-//    static uint8_t thisbright = 255; // How bright should the LED/display be.
-//    static uint8_t   basebeat = 5; // Higher = faster movement.
-//
-//    static uint8_t lastSecond = 99;  // Static variable, means it's only defined once. This is our 'debounce' variable.
-//    uint8_t secondHand = (millis() / 1000) % 30; // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
-//
-//    if (updatePatternBasedOnSpeedSetting(100) == false)
-//        return;
-//
-//    if (lastSecond != secondHand) { // Debounce to make sure we're not repeating an assignment.
-//        lastSecond = secondHand;
-//        switch (secondHand) {
-//        //case  0: numdots = 1; basebeat = 20; hueinc = 16; faderate = 2; thishue = 0; break; // You can change values here, one at a time , or altogether.
-//        case 10: numdots = 4; basebeat = 10; hueinc = 16; faderate = 8; thishue = 128; break;
-//        case 20: numdots = 8; basebeat = 5; hueinc = 0; faderate = 8; thishue = random8(); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
-//        case 30: break;
-//        }
-//    }
-//
-//    // Several colored dots, weaving in and out of sync with each other
-//    curhue = thishue; // Reset the hue values.
-//    fadeToBlackBy(leds, NUM_LEDS, faderate);
-//    for (int i = 0; i < numdots; i++) {
-//        //beat16 is a FastLED 3.1 function
-//        leds[beatsin16(basebeat + i + numdots, 0, NUM_LEDS)] += CHSV(gHue + curhue, thissat, thisbright);
-//        curhue += hueinc;
-//    }
-//}
+void juggle()
+{
+    static uint8_t    numdots = 4; // Number of dots in use.
+    static uint8_t   faderate = 2; // How long should the trails be. Very low value = longer trails.
+    static uint8_t     hueinc = 255 / numdots - 1; // Incremental change in hue between each dot.
+    static uint8_t    thishue = 0; // Starting hue.
+    static uint8_t     curhue = 0; // The current hue
+    static uint8_t    thissat = 255; // Saturation of the colour.
+    static uint8_t thisbright = 255; // How bright should the LED/display be.
+    static uint8_t   basebeat = 5; // Higher = faster movement.
+
+    static uint8_t lastSecond = 99;  // Static variable, means it's only defined once. This is our 'debounce' variable.
+    uint8_t secondHand = (millis() / 1000) % 30; // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
+
+    if (updatePatternBasedOnSpeedSetting(100) == false)
+        return;
+
+    if (lastSecond != secondHand) { // Debounce to make sure we're not repeating an assignment.
+        lastSecond = secondHand;
+        switch (secondHand) {
+        //case  0: numdots = 1; basebeat = 20; hueinc = 16; faderate = 2; thishue = 0; break; // You can change values here, one at a time , or altogether.
+        case 10: numdots = 4; basebeat = 10; hueinc = 16; faderate = 8; thishue = 128; break;
+        case 20: numdots = 8; basebeat = 5; hueinc = 0; faderate = 8; thishue = random8(); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
+        case 30: break;
+        }
+    }
+
+    // Several colored dots, weaving in and out of sync with each other
+    curhue = thishue; // Reset the hue values.
+    fadeToBlackBy(leds, NUM_LEDS, faderate);
+    for (int i = 0; i < numdots; i++) {
+        //beat16 is a FastLED 3.1 function
+        leds[beatsin16(basebeat + i + numdots, 0, NUM_LEDS)] += CHSV(gHue + curhue, thissat, thisbright);
+        curhue += hueinc;
+    }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
+}
 
 void fire()
 {
     heatMap(HeatColors_p, true);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 void water()
 {
     heatMap(IceColors_p, false);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Pride2015 by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
@@ -2173,8 +2184,6 @@ void pride()
     uint16_t brightnesstheta16 = sPseudotime;
 #if LED_DEVICE_TYPE == 4
     for (uint16_t i = 0; i < (LEAFCOUNT * 3); i++) {
-#elif FLACON == 1
-    for (uint16_t i = 0; i < FALCON_LEDS_PER_ROW; i++) {
 #else
     for (uint16_t i = 0; i < NUM_LEDS; i++) {
 #endif
@@ -2197,13 +2206,12 @@ void pride()
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 64);
         }
-#elif FALCON == 1
-        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
-        nblend(leds[pixelnumber+1], newcolor, 64);
-        copyPattern();
 #else
         pixelnumber = (NUM_LEDS - 1) - pixelnumber;
         nblend(leds[pixelnumber], newcolor, 64);
+        #if COPYPATTERN == 1
+          copyPattern();
+        #endif
 #endif
     }
 }
@@ -2214,6 +2222,9 @@ void radialPaletteShift()
         // leds[i] = ColorFromPalette( gCurrentPalette, gHue + sin8(i*16), brightness);
         leds[i] = ColorFromPalette(gCurrentPalette, i + gHue, 255, LINEARBLEND);
     }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
@@ -2297,6 +2308,9 @@ void colorWaves()
     colorwaves(leds, LEAFCOUNT * 3, gCurrentPalette);
 #else
     colorwaves(leds, NUM_LEDS, gCurrentPalette);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 #endif
 }
 
@@ -2355,14 +2369,13 @@ void colorwaves(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
         {
             nblend(leds[pixelnumber * (PIXELS_PER_LEAF / 3) + i2], newcolor, 128);
         }
-#elif FALCON == 1
-        pixelnumber = (FALCON_LEDS_PER_ROW-1) - pixelnumber;
-        nblend(leds[pixelnumber+1], newcolor, 128);
-        copyPattern();
 #else
         pixelnumber = (numleds - 1) - pixelnumber;
 
         nblend(ledarray[pixelnumber], newcolor, 128);
+        #if COPYPATTERN == 1
+          copyPattern();
+        #endif
 #endif
     }
 }
@@ -2422,12 +2435,12 @@ void rainbowRoll()
           leds[(i*HEIGHT)+j]=tmp_leds[i];
         }
     }
-#elif FALCON == 1
-    leds(FALCON_LEDS_OFFSET,FALCON_LEDS_PER_ROW).fill_rainbow(gHue, 7);
-    copyPattern();
 #else
     // FastLED's built-in rainbow generator
     fill_rainbow(leds, NUM_LEDS, gHue, 7);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 #endif
 }
 
@@ -2435,18 +2448,13 @@ void rainbowBeat()
 {
     // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
     uint8_t beat = beatsin8(speed, 64, 255); // Beat advances and retreats in a sine wave
-#if FALCON == 1    
-    for (int i = FALCON_LEDS_OFFSET; i < FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET; i++)
-    {
-        leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
-        copyPattern();
-    }
-#else
     for (int i = 0; i < NUM_LEDS; i++)
     {
         leds[i] = ColorFromPalette(palettes[0], gHue + (i * 2), beat - gHue + (i * 10));
     }
-#endif
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // LEDs turn on one at a time at full brightness and slowly fade to black
@@ -2455,19 +2463,6 @@ void randomPaletteFades()
 {
     if (updatePatternBasedOnSpeedSetting(100) == false)
         return;
-#if FALCON == 1
-    uint16_t i = random16(FALCON_LEDS_OFFSET, (FALCON_LEDS_PER_ROW+FALCON_LEDS_OFFSET - 1)); // Pick a random LED
-    {
-        uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
-        if (CRGB(0, 0, 0) == CRGB(leds[i])) // Only set new color to LED that is off
-        {
-            leds[i] = ColorFromPalette(palettes[currentPaletteIndex], colorIndex, 255, currentBlending);
-            leds(FALCON_LEDS_OFFSET, FALCON_LEDS_PER_ROW).blur1d(32); // Blur colors with neighboring LEDs
-        }
-    }
-    leds(FALCON_LEDS_OFFSET, FALCON_LEDS_PER_ROW).fadeToBlackBy(8); // Slowly fade LEDs to black
-    copyPattern();
-#else
     uint16_t i = random16(0, (NUM_LEDS - 1)); // Pick a random LED
     {
         uint8_t colorIndex = random8(0, 255); // Pick a random color (from palette)
@@ -2478,30 +2473,35 @@ void randomPaletteFades()
         }
     }
     fadeToBlackBy(leds, NUM_LEDS, 8); // Slowly fade LEDs to black
-#endif
+  #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Theater style chasing lights rotating in one direction while the
 // rainbow colors rotate in the opposite direction.
-//void rainbowChase()
-//{
-//    if (updatePatternBasedOnSpeedSetting(200) == false)
-//        return;
-//
-//    static int q = 0;
-//    //fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
-//    
-//    for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
-//    {
-//        leds[((i + q) + 1)] = CRGB(0, 0, 0);
-//        leds[((i + q) + 2)] = CRGB(0, 0, 0);
-//    }
-//    if (2 > q) {
-//        q++;
-//    } else {
-//        q = 0;
-//    }
-//}
+void rainbowChase()
+{
+    if (updatePatternBasedOnSpeedSetting(200) == false)
+        return;
+
+    static int q = 0;
+    //fill_gradient(leds, (NUM_LEDS - 1), CHSV(gHue, 200, 255), 0, CHSV((gHue + 1), 200, 255), LONGEST_HUES);
+    
+    for (int i = 0; (NUM_LEDS - 3) > i; i += 3)
+    {
+        leds[((i + q) + 1)] = CRGB(0, 0, 0);
+        leds[((i + q) + 2)] = CRGB(0, 0, 0);
+    }
+    if (2 > q) {
+        q++;
+    } else {
+        q = 0;
+    }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
+}
 
 void randomDots() // Similar to randomFades(), colors flash on/off quickly
 {
@@ -2515,6 +2515,9 @@ void randomDots() // Similar to randomFades(), colors flash on/off quickly
         leds[pos] = CHSV((random8() % 256), 200, 255);
     }
     fadeToBlackBy(leds, NUM_LEDS, 64);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Same as randomPaletteFades() but with completely random colors
@@ -2530,6 +2533,9 @@ void randomFades()
         leds[pos] = CHSV((random8() % 256), 200, 255);
     }
     fadeToBlackBy(leds, NUM_LEDS, 8);
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Same as randomDots() but with red and blue flashes only
@@ -2549,6 +2555,9 @@ void policeLights()
     {
         leds[p] = CRGB(0, 0, 255);
     }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Same as randomDots() but faster white flashes only
@@ -2562,6 +2571,9 @@ void glitter()
     {
         leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
     }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Twinkling random dim white LEDs mixed with glitter() above
@@ -2577,6 +2589,9 @@ void snowFlakes()
         leds[x] = CRGB(shader, shader, shader);
     }
     leds[random16(0, (NUM_LEDS - 1))] = CRGB::White;
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 // Simulates lightning with randomly timed and random size bolts
@@ -2635,6 +2650,9 @@ void lightning()
         boltTimer.period = (unsigned long)(random16(1500, 5000));
         boltTimer.mark = millis();
     }
+    #if COPYPATTERN == 1
+      copyPattern();
+    #endif
 }
 
 //######################### Patterns by Resseguie/FastLED-Patterns END #########################
@@ -3232,13 +3250,22 @@ uint8_t XY (uint8_t x, uint8_t y) {
 
 #endif
 
-#if FALCON == 1
+#if COPYPATTERN == 1
 void copyPattern()
 {
-  //realleds(183, 213) = leds(0,30);
-  //realleds(152, 182) = leds(30,0);
-  //realleds(1, 48) = leds(31,78);
-  //realleds(49, 78) = leds(0,30);
+    realleds(183,213) = leds(0,30);
+    realleds(152,182) = leds(30,0);
+    realleds(1,48) = leds(31,78);
+    realleds(49,78) = leds(79,108);
+    realleds(105,151) = leds(78,30);
+    realleds(102,102) = leds(78,78);
+    realleds(103,103) = leds(78,78);
+    realleds(104,104) = leds(78,78);
+    realleds(214,214) = leds(31,31);
+    realleds(215,215) = leds(31,31);
+    realleds(216,216) = leds(31,31);
+    realleds(79,101) = leds(55,77);
+    realleds(217,239) = leds(30,52);
 }
 #endif
 
