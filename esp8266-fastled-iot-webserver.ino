@@ -107,10 +107,11 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
     #define NUM_LEDS 109
-    //#define NUM_LEDS 33
-    //#define NUM_LEDS 183
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
-    #define COPYPATTERN  1
+    #define COPYPATTERN  1               // If you want to copy the pattern to different parts of your bands e.g. mirror it. If this is used, the NUM_LED is just a virtual band, this needs to be copied to the real bands in the function copyPattern().
+    #if COPYPATTERN == 1
+      #define REAL_NUM_LEDS 240               // If you have splitted LED Bands this is the number of LEDs of your real environment
+    #endif
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
     #define HEIGHT 8
@@ -448,7 +449,9 @@ EspalexaDevice* alexa_main;
 
 //CRGB *realleds[NUM_LEDS];
 CRGBArray<NUM_LEDS> leds;
-CRGBArray<240> realleds;
+#if COPYPATTERN == 1
+CRGBArray<REAL_NUM_LEDS> realleds;
+#endif
 //CRGBSet leds[realleds, NUM_LEDS];
 
 const uint8_t brightnessCount = 5;
@@ -693,7 +696,11 @@ void setup() {
     Serial.print("\n\n");
 
 #if LED_TYPE == WS2812 || LED_TYPE == WS2812B || LED_TYPE == WS2811 || LED_TYPE == WS2813 || LED_TYPE == NEOPIXEL
-    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(realleds, 240);         // WS2812 (Neopixel)
+  #if COPYPATTERN
+    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(realleds, REAL_NUM_LEDS);         // WS2812 (Neopixel)
+  #elif
+    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(realleds, NUM_LEDS);         // WS2812 (Neopixel)
+  #endif
 #elif defined CLK_PIN
     FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS); // for APA102 (Dotstar)
 #else
