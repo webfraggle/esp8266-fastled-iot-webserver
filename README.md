@@ -2,10 +2,15 @@
 
 <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/graphs/contributors" alt="Contributors"><img src="https://img.shields.io/github/contributors/NimmLor/esp8266-fastled-iot-webserver" /></a> <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/releases" alt="Downloads"><img src="https://img.shields.io/github/downloads/NimmLor/esp8266-fastled-iot-webserver/total"/></a> <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/commits/master" alt="Downloads"><img src="https://img.shields.io/github/commits-since/NimmLor/esp8266-fastled-iot-webserver/latest?include_prereleases" /></a> <a href="https://github.com/NimmLor/esp8266-fastled-iot-webserver/releases" alt="Downloads"><img src="https://img.shields.io/github/downloads-pre/NimmLor/esp8266-fastled-iot-webserver/latest/total?color=%09%23228B22&label=download%40latest-version" /></a>
 
+This is a fork of NimmLor/esp8266-fastled-iot-webserver.
 
-I added some features for my Millenium Flacon and a Plasma Animation for a LED matrix. I tested it only in ESP32
+I added a feature to copy the animation pattern from a virtual LED band to the real band. This is used for my shelf, where I splitted the band and I wanted a correct and complete animation from left to right. 
 
+![shelf](software_screenshots/shelf.jpg?raw=true)
 
+I also added a Plasma Animation for a LED matrix. I tested it only in ESP32. Some of the animations crashed my ESP32 so I removed them.
+
+---
 
 This is a fork of [jasoncoon's esp8266 fastled webserver](https://github.com/jasoncoon/esp8266-fastled-webserver) that was adapted to control the colors of my  [LED-Projects](https://www.thingiverse.com/Surrbradl08/designs).
 
