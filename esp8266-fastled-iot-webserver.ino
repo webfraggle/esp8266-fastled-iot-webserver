@@ -105,12 +105,28 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
+#define COPYPATTERN  1                // If you want to copy the pattern to different parts of your bands e.g. mirror it. If this is used, the NUM_LED is just a virtual band, this needs to be copied to the real bands in the function copyPattern().
+#define PATTERN_FALCON 1
+#define PATTERN_SHELF 2
+#define USE_PATTERN PATTERN_FALCON
+//#define USE_PATTERN SHELF
+
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
-    #define NUM_LEDS 109
+    #if USE_PATTERN == PATTERN_SHELF
+      #define NUM_LEDS 109
+    #endif
+    #if USE_PATTERN == PATTERN_FALCON
+      #define NUM_LEDS 29
+    #endif
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
-    #define COPYPATTERN  1               // If you want to copy the pattern to different parts of your bands e.g. mirror it. If this is used, the NUM_LED is just a virtual band, this needs to be copied to the real bands in the function copyPattern().
+    #define BUTTON_PIN 25                 // used as a reset button for WiFi config
     #if COPYPATTERN == 1
-      #define REAL_NUM_LEDS 240               // If you have splitted LED Bands this is the number of LEDs of your real environment
+      #if USE_PATTERN == PATTERN_SHELF
+        #define REAL_NUM_LEDS 240               // If you have splitted LED Bands this is the number of LEDs of your real environment
+      #endif
+      #if USE_PATTERN == PATTERN_FALCON
+        #define REAL_NUM_LEDS 117               // If you have splitted LED Bands this is the number of LEDs of your real environment
+      #endif
     #endif
 #elif LED_DEVICE_TYPE == 1              // LED MATRIX
     #define LENGTH 32
@@ -684,7 +700,8 @@ const uint8_t patternCount = ARRAY_SIZE(patterns);
 #include "Fields.h"
 
 // ######################## define setup() and loop() ####################
-
+bool resetPressed = false;
+#include "copypattern.h"
 void setup() {
 #ifdef ESP8266
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -759,7 +776,11 @@ void setup() {
         Serial.println(F("An Error has occurred while mounting SPIFFS"));
         return;
     }
+    // setting up Wifi Reset Button
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    resetPressed = false;
 
+    
     // setting up Wifi
     String macID = WiFi.macAddress().substring(12, 14) +
         WiFi.macAddress().substring(15, 17);
@@ -779,9 +800,9 @@ void setup() {
     #else
         wifiManager.setDebugOutput(false);
     #endif
-    wifiManager.setConnectTimeout(70);
+    //wifiManager.setConnectTimeout(70);
 
-    wifiManager.setTimeout(80);
+    //wifiManager.setTimeout(80);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
@@ -1359,6 +1380,19 @@ void loop() {
 #else
     webServer.handleClient();
 #endif
+
+    // reset wificonfig
+    if (digitalRead(BUTTON_PIN) == LOW && !resetPressed)
+    {
+      Serial.println("Starting reset");
+      resetPressed = true;
+      WiFi.disconnect();
+      delay(1000);
+      wifiManager.resetSettings();
+      delay(500);
+      ESP.restart();
+    }
+    
 
     if (wifiMangerPortalRunning) {
         wifiManager.process();
@@ -3181,24 +3215,6 @@ uint8_t XY (uint8_t x, uint8_t y) {
 
 #endif
 
-#if COPYPATTERN == 1
-void copyPattern()
-{
-    realleds(183,213) = leds(0,30);
-    realleds(152,182) = leds(30,0);
-    realleds(1,48) = leds(31,78);
-    realleds(49,78) = leds(79,108);
-    realleds(105,151) = leds(78,30);
-    realleds(102,102) = leds(78,78);
-    realleds(103,103) = leds(78,78);
-    realleds(104,104) = leds(78,78);
-    realleds(214,214) = leds(31,31);
-    realleds(215,215) = leds(31,31);
-    realleds(216,216) = leds(31,31);
-    realleds(79,101) = leds(55,77);
-    realleds(217,239) = leds(30,52);
-}
-#endif
 
 // #################### Visualization
 
