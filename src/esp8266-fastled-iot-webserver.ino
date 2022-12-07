@@ -60,7 +60,7 @@ extern "C" {
 
 /*######################## MAIN CONFIG ########################*/
 #define LED_TYPE            WS2812B                     // You might also use a WS2811 or any other strip that is Fastled compatible 
-#define DATA_PIN            D7                          // Be aware: the pin mapping might be different on boards like the NodeMCU
+#define DATA_PIN            7                          // Be aware: the pin mapping might be different on boards like the NodeMCU
 //#define CLK_PIN             D5                        // Only required when using 4-pin SPI-based LEDs
 #define CORRECTION          TypicalLEDStrip            // If colors are weird use TypicalLEDStrip
 #define COLOR_ORDER         GRB                         // Change this if colors are swapped (in my case, red was swapped with green)
@@ -105,11 +105,6 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Device Configuration:
 //---------------------------------------------------------------------------------------------------------//
-#define COPYPATTERN  1                // If you want to copy the pattern to different parts of your bands e.g. mirror it. If this is used, the NUM_LED is just a virtual band, this needs to be copied to the real bands in the function copyPattern().
-#define PATTERN_FALCON 1
-#define PATTERN_SHELF 2
-#define USE_PATTERN PATTERN_FALCON
-//#define USE_PATTERN SHELF
 
 #if LED_DEVICE_TYPE == 0                // Generic LED-Strip
     #if USE_PATTERN == PATTERN_SHELF
@@ -119,7 +114,6 @@ extern "C" {
       #define NUM_LEDS 29
     #endif
     #define BAND_GROUPING    1            // Groups part of the band to save performance and network traffic
-    #define BUTTON_PIN 25                 // used as a reset button for WiFi config
     #if COPYPATTERN == 1
       #if USE_PATTERN == PATTERN_SHELF
         #define REAL_NUM_LEDS 240               // If you have splitted LED Bands this is the number of LEDs of your real environment
@@ -975,83 +969,8 @@ void setup() {
         }); // GET /ota
 #endif
 
-#ifdef ENABLE_ALEXA_SUPPORT
-#ifdef ALEXA_DEVICE_NAME
-    alexa_main = new EspalexaDevice(ALEXA_DEVICE_NAME, mainAlexaEvent, EspalexaDeviceType::color);
-#else
-    alexa_main = new EspalexaDevice(cfg.hostname, mainAlexaEvent, EspalexaDeviceType::color);
-#endif
-    espalexa.addDevice(alexa_main);
-#ifdef AddAutoplayDevice
-    espalexa.addDevice(AddAutoplayDevice, AlexaAutoplayEvent, EspalexaDeviceType::onoff); //non-dimmable device
-#endif
-#ifdef AddStrobeDevice
-    espalexa.addDevice(AddStrobeDevice, AlexaStrobeEvent, EspalexaDeviceType::color); //non-dimmable device
-#endif
-#ifdef AddSpecificPatternDeviceA
-    espalexa.addDevice(AddSpecificPatternDeviceA, AlexaSpecificEventA, EspalexaDeviceType::onoff); //non-dimmable device
-#endif
-#ifdef AddSpecificPatternDeviceB
-    espalexa.addDevice(AddSpecificPatternDeviceB, AlexaSpecificEventB, EspalexaDeviceType::onoff); //non-dimmable device
-#endif
-#ifdef AddSpecificPatternDeviceC
-    espalexa.addDevice(AddSpecificPatternDeviceC, AlexaSpecificEventC, EspalexaDeviceType::onoff); //non-dimmable device
-#endif
-#ifdef AddAudioDevice
-    espalexa.addDevice(AddAudioDevice, AlexaAudioEvent, EspalexaDeviceType::onoff); //non-dimmable device
-#endif
-
-    webServer.onNotFound([]() {
-        if (!espalexa.handleAlexaApiCall(webServer.uri(), webServer.arg(0))) //if you don't know the URI, ask espalexa whether it is an Alexa control request
-        {
-            //whatever you want to do with 404s
-            webServer.send(404, "text/plain", "Not found");
-        }
-        });
 
     addRebootPage(0);
-
-    webServer.on("/alexa", HTTP_GET, []() {
-        IPAddress ip = WiFi.localIP();
-        String h = "<font face='arial'><h1> Alexa pairing mode</h1>";
-        h += "<h2>Procedure: </h3>";
-        h += "The webserver will reboot and the UI won't be available.<br>";
-        h += "<b>Now. Say to Alexa: 'Alexa, discover devices'.<b><br><br>";
-        h += "Alexa should tell you that it found a new device, if it did reset the esp8266 to return to the normal mode.";
-        h += "<br>Exit pairing mode: <a href=\"http://" + ip.toString() + "/reboot\"); ' value='Reboot'>Reboot</a>";
-        h += "</font>";
-
-        webServer.send(200, "text/html", h);
-        webServer2.on("/alexa", [&]() {webServer2.send(200, "text/html", h); });
-        delay(100);
-        webServer.stop();
-        delay(500);
-        webServer.close();
-        delay(500);
-        webServer2.onNotFound([]() {
-            if (!espalexa.handleAlexaApiCall(webServer2.uri(), webServer2.arg(0))) //if you don't know the URI, ask espalexa whether it is an Alexa control request
-            {
-                //whatever you want to do with 404s
-                webServer2.send(404, "text/plain", "Not found");
-            }
-            });
-        addRebootPage(2);
-        delay(100);
-        webServer.stop();
-        delay(500);
-        webServer.close();
-        delay(500);
-        espalexa.begin(&webServer2);
-        delay(100);
-        while (1)
-        {
-            espalexa.loop();
-            delay(1);
-        }
-        });
-#else
-    addRebootPage(0);
-#endif
 
     webServer.on("/config.json", HTTP_GET, []() {
         String json = getFieldsJson(fields, fieldCount);
@@ -4442,124 +4361,6 @@ void ambilight() {
 
 //############################## ALEXA Device Events ##############################
 
-#ifdef ENABLE_ALEXA_SUPPORT
-void mainAlexaEvent(EspalexaDevice* d) {
-    if (d == nullptr) return;
-
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
-    #endif
-
-    if (d->getValue() == 0)setPower(0); else {
-        setPower(1);
-        setBrightness(d->getValue());
-    }
-    static int lr;
-    static int lg;
-    static int lb;
-    if ((lr != NULL && lr != d->getR() && lg != d->getG() && lb != d->getB()) || currentPatternIndex == patternCount - 1)
-    {
-        setSolidColor(d->getR(), d->getG(), d->getB(), true);
-        setPattern(patternCount - 1);
-    }
-    lr = d->getR();
-    lg = d->getG();
-    lb = d->getB();
-}
-
-#ifdef AddStrobeDevice 
-void AlexaStrobeEvent(EspalexaDevice* d) {
-    if (d == nullptr) return;
-
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Strobe update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
-    #endif
-    if (d->getValue() == 0)setPattern(patternCount - 1); else {
-        if (d->getValue() == 255)
-        {
-            setBrightness(255);
-            setPattern(13);
-        }
-        else speed = d->getValue();
-        d->setValue(speed);
-    }
-    static int lr;
-    static int lg;
-    static int lb;
-    if ((lr != NULL && lr != d->getR() && lg != d->getG() && lb != d->getB()) || currentPatternIndex == patternCount - 1)
-    {
-        setSolidColor(d->getR(), d->getG(), d->getB(), true);
-        setPattern(12);
-    }
-    lr = d->getR();
-    lg = d->getG();
-    lb = d->getB();
-
-}
-#endif
-#ifdef AddAutoplayDevice
-void AlexaAutoplayEvent(EspalexaDevice* d) {
-    if (d == nullptr) return;
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Autoplay update: state: "); Serial.println(d->getPercent());
-    #endif
-    if (d->getValue() > 0)
-    {
-        setAutoplay(1);
-        setAutoplayDuration(d->getPercent());
-    }
-    else setAutoplay(0);
-}
-#endif
-#ifdef AddSpecificPatternDeviceA
-void AlexaSpecificEventA(EspalexaDevice* d) {
-    if (d == nullptr) return;
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
-    #endif
-    if (d->getValue() != 0)setPattern(SpecificPatternA);
-    else setPattern(patternCount - 1);
-}
-#endif
-#ifdef AddSpecificPatternDeviceB
-void AlexaSpecificEventB(EspalexaDevice* d) {
-    if (d == nullptr) return;
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
-    #endif
-    if (d->getValue() != 0)setPattern(SpecificPatternB);
-    else setPattern(patternCount - 1);
-}
-#endif
-#ifdef AddSpecificPatternDeviceC
-void AlexaSpecificEventC(EspalexaDevice* d) {
-    if (d == nullptr) return;
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Specific Pattern update: state: "); Serial.println(d->getValue());
-    #endif
-    if (d->getValue() != 0)setPattern(SpecificPatternC);
-    else setPattern(patternCount - 1);
-}
-#endif
-#ifdef AddAudioDevice
-void AlexaAudioEvent(EspalexaDevice* d) {
-    if (d == nullptr) return;
-    #if LED_DEBUG != 0
-    SERIAL_DEBUG_BOL
-    Serial.print(" Alexa Audio update: rgb: "); Serial.print(d->getR() + d->getG() + d->getB()); Serial.print(", b: "); Serial.println(d->getValue());
-    #endif
-    if (d->getValue() != 0)setPattern(AUDIOPATTERN);
-    else setPattern(patternCount - 1);
-
-}
-#endif
-#endif
 
 /*######################## LOGO FUNCTIONS ########################*/
 
