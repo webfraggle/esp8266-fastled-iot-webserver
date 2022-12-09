@@ -60,14 +60,14 @@ extern "C" {
 
 /*######################## MAIN CONFIG ########################*/
 #define LED_TYPE            WS2812B                     // You might also use a WS2811 or any other strip that is Fastled compatible 
-#define DATA_PIN            7                          // Be aware: the pin mapping might be different on boards like the NodeMCU
+#define DATA_PIN            LED_DATA_PIN                          // Be aware: the pin mapping might be different on boards like the NodeMCU
 //#define CLK_PIN             D5                        // Only required when using 4-pin SPI-based LEDs
 #define CORRECTION          TypicalLEDStrip            // If colors are weird use TypicalLEDStrip
 #define COLOR_ORDER         GRB                         // Change this if colors are swapped (in my case, red was swapped with green)
 #define MILLI_AMPS          8000                       // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define VOLTS               5                           // Voltage of the Power Supply
 
-#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
+//#define LED_DEBUG 0                     // enable debug messages on serial console, set to 0 to disable debugging
 
 #define DEFAULT_HOSTNAME "LEDs"         // Name that appears in your network, don't use whitespaces, use "-" instead
 
@@ -160,7 +160,7 @@ extern "C" {
 //---------------------------------------------------------------------------------------------------------//
 // Feature Configuration: Enabled by removing the "//" in front of the define statements
 //---------------------------------------------------------------------------------------------------------//
-    #define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
+    //#define ENABLE_OTA_SUPPORT                // requires ArduinoOTA - library, not working on esp's with 1MB memory (esp-01, Wemos D1 lite ...)
         //#define OTA_PASSWORD "passwd123"      //  password that is required to update the esp's firmware wireless
 
     #define ENABLE_MULTICAST_DNS              // allows to access the UI via "http://<HOSTNAME>.local/", implemented by GitHub/WarDrake
@@ -743,8 +743,9 @@ void setup() {
     SERIAL_DEBUG_EOL
     SERIAL_DEBUG_LN(F("System Information:"))
     SERIAL_DEBUG_LNF("Version: %s (%s)", VERSION, VERSION_DATE)
-    SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
-    SERIAL_DEBUG_LNF("SDK: %s", system_get_sdk_version())
+    SERIAL_DEBUG_LNF("Total Heap: %d", ESP.getHeapSize())
+    SERIAL_DEBUG_LNF("Free Heap: %d", ESP.getFreeHeap())
+    SERIAL_DEBUG_LNF("SDK: %s", ESP.getSdkVersion())
 #ifdef ESP8266
     SERIAL_DEBUG_LNF("Boot Vers: %d", system_get_boot_version())
     SERIAL_DEBUG_LNF("CPU Speed: %d MHz", system_get_cpu_freq())
@@ -784,6 +785,7 @@ void setup() {
 
     char nameChar[nameString.length() + 1];
     nameString.toCharArray(nameChar, sizeof(nameChar));
+    delay(1000);
 
     // setup wifiManager
     wifiManager.setHostname(cfg.hostname); // set hostname
@@ -794,9 +796,9 @@ void setup() {
     #else
         wifiManager.setDebugOutput(false);
     #endif
-    //wifiManager.setConnectTimeout(70);
+    wifiManager.setConnectTimeout(70);
 
-    //wifiManager.setTimeout(80);
+    wifiManager.setTimeout(80);
 
     //automatically connect using saved credentials if they exist
     //If connection fails it starts an access point with the specified name
@@ -1278,7 +1280,7 @@ void setup() {
 }
 
 void loop() {
-
+    yield();
     static unsigned int loop_counter = 0;
     static unsigned int current_fps = FRAMES_PER_SECOND;
     static unsigned int frame_delay = (1000 / FRAMES_PER_SECOND) * 1000; // in micro seconds
@@ -1428,7 +1430,7 @@ void loop() {
 #endif
 
     EVERY_N_SECONDS(10) {
-      SERIAL_DEBUG_LNF("Heap: %d", system_get_free_heap_size())
+      SERIAL_DEBUG_LNF("Free Heap: %d", ESP.getFreeHeap())
     }
 
     // change to a new cpt-city gradient palette
