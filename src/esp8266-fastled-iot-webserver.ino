@@ -20,19 +20,14 @@
 #include <FastLED.h>
 FASTLED_USING_NAMESPACE
 #include <FS.h>
-#ifdef ESP8266
-extern "C" {
-#include "user_interface.h"
-}
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#elif defined(ESP32)
 #include <WiFi.h>
+#include "ESPAsyncWebServer.h"
 #include <SPIFFS.h>
-#endif
 #include <EEPROM.h>
 #include "GradientPalettes.h"
 #include "Field.h"
+
+#include "WifiManagerDefines.h"
 
 /*
     ______ _____  ____   ____  ___   _____  _____
@@ -224,47 +219,6 @@ extern "C" {
 
 
 
-/*######################## ANIMATED RGB LOGO CONFIG ########################*/
-
-#ifdef TWENTYONEPILOTS
-    #define RING_LENGTH 24                                      // amount of pixels for the Ring (should be 24)
-    #define DOUBLE_STRIP_LENGTH 2                               // amount of pixels used for the straight double line
-    #define DOT_LENGTH 1                                        // amount of pixels used for the dot
-    #define ITALIC_STRIP_LENGTH 2                               // amount of pixels used for the 
-    #define ANIMATION_NAME "Twenty One Pilots - Animated"       // name for the Logo animation, displayed on the webserver
-    #define ANIMATION_NAME_STATIC "Twenty One Pilots - Static"  // logo for the static logo, displayed on the webserver
-    #define ANIMATION_RING_DURATION 30                          // longer values result into a longer loop duration
-    #define STATIC_RING_COLOR CRGB(222,255,5)                   // Color for the outer ring in static mode
-    #define STATIC_LOGO_COLOR CRGB(150,240,3)                   // Color for the inner logo in static mode
-/*
-Wiring order:
-The array below will determine the order of the wiring,
-  the first value is for the ring, I've hooked it up after the inner part,
-  so it's the start value is the total length of all other pixels (2+1+2)
-the second one is for the vertical double line
-  in my case it was the first one that is connected to the esp8266,
-the third one is for the dot and the fourth one for the angled double line
-if you have connected the ring first it should look like this: const int twpOffsets[] = { 0,24,26,27 };
-*/
-// Syntax: { <RING>, <VERTICAL>, <HORIZONTAL_DOT>, <ANGLED> };
-// The values represent the zero-based index on the strip of the element
-    const int twpOffsets[] = { 5,0,2,3 };
-#endif  // TWENTYONEPILOTS
-
-#ifdef THINGIVERSE
-    #define RING_LENGTH 24                                  // amount of pixels for the Ring (should be 24)
-    #define HORIZONTAL_LENGTH 3                             // amount of pixels used for the straight double line
-    #define VERTICAL_LENGTH 2                               // amount of pixels used for the straight double line
-    #define ANIMATION_NAME "Thingiverse - Animated"         // name for the Logo animation, displayed on the webserver
-    #define ANIMATION_NAME_STATIC "Thingiverse - Static"    // logo for the static logo, displayed on the webserver
-    #define ANIMATION_RING_DURATION 30                      // longer values result into a longer loop duration
-    #define STATIC_RING_COLOR CRGB(0,149,255)               // Color for the outer ring in static mode
-    #define STATIC_LOGO_COLOR CRGB(0,149,255)               // Color for the inner logo in static mode
-    #define RINGFIRST false                                 // change this to <true> if you have wired the ring first
-    #define HORIZONTAL_BEFORE_VERTICAL true                 // change this to <true> if you have wired the horizontal strip before the vertical
-#endif  // THINGIVERSE
-
-/*###################### ANIMATED RGB LOGO CONFIG END ######################*/
 
 /*-------- SOUND SENSOR (LEGACY) --------*/
 #ifdef SOUND_SENSOR_SUPPORT
@@ -395,11 +349,6 @@ if you have connected the ring first it should look like this: const int twpOffs
     #endif
 #endif
 
-    // wifi definition
-    #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager/tree/development
-    WiFiManager wifiManager;
-    bool wifiMangerPortalRunning = false;
-    bool wifiConnected = false;
 
     // Misc Params
     #define AVG_ARRAY_SIZE 10
@@ -415,11 +364,7 @@ if you have connected the ring first it should look like this: const int twpOffs
 // include config management
 #include "config.h"
 
-#ifdef ESP8266
-ESP8266WebServer webServer(80);
-#elif defined(ESP32)
-WebServer webServer(80);
-#endif
+AsyncWebServer webServer(80);
 
 // #include "FSBrowser.h" currently not used
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -430,28 +375,38 @@ WebServer webServer(80);
 #include <ArduinoOTA.h>
 #endif
 
-#ifdef ENABLE_ALEXA_SUPPORT
-#if LED_DEBUG != 0
-#define ESPALEXA_DEBUG
-#endif
-#include <Espalexa.h>
-void mainAlexaEvent(EspalexaDevice*);
-Espalexa espalexa;
-#ifdef ESP8266
-ESP8266WebServer webServer2(80);
-#elif defined(ESP32)
-WebServer webServer2(80);
-#endif
-EspalexaDevice* alexa_main;
-#endif // ENABLE_ALEXA_SUPPORT
+bool wifiManagerStarted = false;
+bool wifiConnected = false;
+ESPAsync_WiFiManager_Lite* ESPAsync_WiFiManager;
 
-#ifdef ENABLE_MULTICAST_DNS
-#ifdef ESP8266
-#include <ESP8266mDNS.h>
-#elif defined(ESP32)
+
+#if USING_CUSTOMS_STYLE
+const char NewCustomsStyle[] /*PROGMEM*/ = "<style>div,input{padding:5px;font-size:1em;}input{width:95%;}body{text-align: center;}\
+button{background-color:blue;color:white;line-height:2.4rem;font-size:1.2rem;width:100%;}fieldset{border-radius:0.3rem;margin:0px;}</style>";
+#endif
+
+void heartBeat()
+{
+    String s = "";
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        s = "WiFi Con!\nOpen http://\n"+String(WiFi.localIP().toString())+"\nin browser";
+    }
+    else
+    {
+        if (ESPAsync_WiFiManager->isConfigMode())
+        {
+        s = "WifiManager is in Config mode";
+        } else {
+        s = "Hopefully trying to connect to Wifi";
+        //ESPAsync_WiFiManager->connectMultiWiFi();
+        }
+    }
+    SERIAL_DEBUG_LN(s);
+}
+
+
 #include <ESPmDNS.h>
-#endif //ESP32
-#endif // ENABLE_MULTICAST_DNS
 
 #ifdef ENABLE_HOMEY_SUPPORT
 #include <Homey.h>              //Athom Homey library
@@ -693,15 +648,19 @@ const uint8_t patternCount = ARRAY_SIZE(patterns);
 
 #include "Fields.h"
 
+
+
+
 // ######################## define setup() and loop() ####################
 bool resetPressed = false;
 #include "copypattern.h"
 void setup() {
-#ifdef ESP8266
-    WiFi.setSleepMode(WIFI_NONE_SLEEP);
-#endif
-    WiFi.mode(WIFI_STA);    // avoid creating a seperate AP
+    //WiFi.mode(WIFI_STA);    // avoid creating a seperate AP
     Serial.begin(115200);
+    #if LED_DEBUG != 0
+    //while (!Serial) continue;
+    delay(1000);
+    #endif
 
     delay(100);
     Serial.print("\n\n");
@@ -746,17 +705,8 @@ void setup() {
     SERIAL_DEBUG_LNF("Total Heap: %d", ESP.getHeapSize())
     SERIAL_DEBUG_LNF("Free Heap: %d", ESP.getFreeHeap())
     SERIAL_DEBUG_LNF("SDK: %s", ESP.getSdkVersion())
-#ifdef ESP8266
-    SERIAL_DEBUG_LNF("Boot Vers: %d", system_get_boot_version())
-    SERIAL_DEBUG_LNF("CPU Speed: %d MHz", system_get_cpu_freq())
-    SERIAL_DEBUG_LNF("Chip ID: %d", system_get_chip_id())
-    SERIAL_DEBUG_LNF("Flash ID: %d", spi_flash_get_id())
-    SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipRealSize())
-    SERIAL_DEBUG_LNF("Vcc: %d", ESP.getVcc())
-#elif defined(ESP32)
     SERIAL_DEBUG_LNF("CPU Speed: %d MHz", ESP.getCpuFreqMHz())
     SERIAL_DEBUG_LNF("Flash Size: %dKB", ESP.getFlashChipSize())
-#endif
     SERIAL_DEBUG_LNF("MAC address: %s", WiFi.macAddress().c_str())
     SERIAL_DEBUG_EOL
 
@@ -777,53 +727,61 @@ void setup() {
 
     
     // setting up Wifi
-    String macID = WiFi.macAddress().substring(12, 14) +
-        WiFi.macAddress().substring(15, 17);
-    macID.toUpperCase();
+    // String macID = WiFi.macAddress().substring(12, 14) +
+    //     WiFi.macAddress().substring(15, 17);
+    // macID.toUpperCase();
 
-    String nameString = String(cfg.hostname) + String(" - ") + macID;
+    // String nameString = String(cfg.hostname) + String(" - ") + macID;
 
-    char nameChar[nameString.length() + 1];
-    nameString.toCharArray(nameChar, sizeof(nameChar));
-    delay(1000);
+    // char nameChar[nameString.length() + 1];
+    // nameString.toCharArray(nameChar, sizeof(nameChar));
+    //delay(1000);
+    // Setup wifiManager
+    
 
-    // setup wifiManager
-    wifiManager.setHostname(cfg.hostname); // set hostname
-    wifiManager.setConfigPortalBlocking(false); // config portal is not blocking (LEDs light up in AP mode)
-    wifiManager.setSaveConfigCallback(handleReboot); // after the wireless settings have been saved a reboot will be performed
-    #if LED_DEBUG != 0
-        wifiManager.setDebugOutput(true);
-    #else
-        wifiManager.setDebugOutput(false);
+    
+      String macID = WiFi.macAddress().substring(12, 14) +
+                 WiFi.macAddress().substring(15, 17);
+  macID.toUpperCase();
+
+  String nameString = "LEDs " + macID;
+
+  SERIAL_DEBUG_LN("ESP WiFi Name: " + nameString);
+
+  char nameChar[nameString.length() + 1];
+  nameString.toCharArray(nameChar, sizeof(nameChar));
+
+  ESPAsync_WiFiManager = new ESPAsync_WiFiManager_Lite();
+
+  // Optional to change default AP IP(192.168.4.1) and channel(10)
+  //ESPAsync_WiFiManager->setConfigPortalIP(IPAddress(192, 168, 120, 1));
+  //ESPAsync_WiFiManager->setConfigPortalChannel(0);
+
+    #if USING_CUSTOMS_STYLE
+    ESPAsync_WiFiManager->setCustomsStyle(NewCustomsStyle);
     #endif
-    wifiManager.setConnectTimeout(70);
 
-    wifiManager.setTimeout(80);
+    #if USING_CUSTOMS_HEAD_ELEMENT
+    ESPAsync_WiFiManager->setCustomsHeadElement("<style>html{filter: invert(10%);}</style>");
+    #endif
 
-    //automatically connect using saved credentials if they exist
-    //If connection fails it starts an access point with the specified name
-    if (wifiManager.autoConnect(nameChar)) {
-        Serial.println("INFO: Wi-Fi connected");
-    } else {
-        Serial.printf("INFO: Wi-Fi manager portal running. Connect to the Wi-Fi AP '%s' to configure your wireless connection\n", nameChar);
-        wifiMangerPortalRunning = true;
-    }
+    #if USING_CORS_FEATURE
+    ESPAsync_WiFiManager->setCORSHeader("Your Access-Control-Allow-Origin");
+    #endif
+
+  // Set customized DHCP HostName
+  wifiManagerStarted = true;
+  ESPAsync_WiFiManager->begin("LED");
+  //Or use default Hostname "NRF52-WIFI-XXXXXX"
+  //ESPAsync_WiFiManager->begin();
+
+  
+
 
     // FS debug information
     // THIS NEEDS TO BE PAST THE WIFI SETUP!! OTHERWISE WIFI SETUP WILL BE DELAYED
     #if LED_DEBUG != 0
         SERIAL_DEBUG_LN(F("SPIFFS contents:"))
-        #ifdef ESP8266
-        Dir dir = SPIFFS.openDir("/");
-        while (dir.next()) {
-            SERIAL_DEBUG_LNF("FS File: %s, size: %lu", dir.fileName().c_str(), dir.fileSize())
-        }
-        SERIAL_DEBUG_EOL
-        FSInfo fs_info;
-        SPIFFS.info(fs_info);
-        unsigned int totalBytes = fs_info.totalBytes;
-        unsigned int usedBytes = fs_info.usedBytes;
-        #elif defined(ESP32)
         File root = SPIFFS.open("/");
         File file = root.openNextFile();
         while (file) {
@@ -833,7 +791,6 @@ void setup() {
         SERIAL_DEBUG_EOL
         unsigned int totalBytes = SPIFFS.totalBytes();
         unsigned int usedBytes = SPIFFS.usedBytes();
-        #endif
         if (usedBytes == 0) {
             SERIAL_DEBUG_LN(F("NO WEB SERVER FILES PRESENT! SEE: https://github.com/NimmLor/esp8266-fastled-iot-webserver/blob/master/Software_Installation.md#32-sketch-data-upload\n"))
         }
@@ -844,9 +801,7 @@ void setup() {
     #endif
 
     // print setup details
-    #ifdef ESP8266
-    SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP8266_RELEASE)
-    #elif defined(ESP32) && defined(ARDUINO_ESP32_RELEASE)
+    #if defined(ESP32) && defined(ARDUINO_ESP32_RELEASE)
     SERIAL_DEBUG_LNF("Arduino Core Version: %s", ARDUINO_ESP32_RELEASE)
     #endif
     SERIAL_DEBUG_LN(F("Enabled Features:"))
@@ -974,7 +929,7 @@ void setup() {
 
     addRebootPage(0);
 
-    webServer.on("/config.json", HTTP_GET, []() {
+    webServer.on("/config.json", HTTP_GET, [](AsyncWebServerRequest * request) {
         String json = getFieldsJson(fields, fieldCount);
         json += ",{\"name\":\"lines\",\"label\":\"Amount of Lines for the Visualizer\",\"type\":\"String\",\"value\":";
         json += PACKET_LENGTH;
@@ -1009,22 +964,22 @@ void setup() {
         json += ",\"mqttDevicename\":\"" + String(cfg.MQTTDeviceName) + "\"";
 #endif
         json += "}}]";
-        webServer.send(200, "application/json", json);
+        request->send(200, "application/json", json);
         });
 
-    webServer.on("/settings", []() {
+    webServer.on("/settings", HTTP_GET, [](AsyncWebServerRequest * request) {
 
         bool force_restart = false;
 
-        String ssid = webServer.arg("ssid");
-        String password = webServer.arg("password");
+        String ssid = request->arg("ssid");
+        String password = request->arg("password");
 
         if (ssid.length() != 0 && password.length() != 0) {
             setWiFiConf(ssid, password);
             force_restart = true;
         }
 
-        String new_hostname = webServer.arg("hostname");
+        String new_hostname = request->arg("hostname");
 
         if (new_hostname.length() != 0 && String(cfg.hostname) != new_hostname) {
             setHostname(new_hostname);
@@ -1032,14 +987,14 @@ void setup() {
         }
 
 #ifdef ENABLE_MQTT_SUPPORT
-        uint8_t mqtt_enabled = uint8_t(webServer.arg("mqtt-enabled").toInt());
-        String mqtt_hostname = webServer.arg("mqtt-hostname");
-        uint16_t mqtt_port = uint16_t(webServer.arg("mqtt-port").toInt());
-        String mqtt_username = webServer.arg("mqtt-user");
-        String mqtt_password = webServer.arg("mqtt-password");
-        String mqtt_topic = webServer.arg("mqtt-topic");
-        String mqtt_set_topic = webServer.arg("mqtt-set-topic");
-        String mqtt_device_name = webServer.arg("mqtt-device-name");
+        uint8_t mqtt_enabled = uint8_t(request->arg("mqtt-enabled").toInt());
+        String mqtt_hostname = request->arg("mqtt-hostname");
+        uint16_t mqtt_port = uint16_t(request->arg("mqtt-port").toInt());
+        String mqtt_username = request->arg("mqtt-user");
+        String mqtt_password = request->arg("mqtt-password");
+        String mqtt_topic = request->arg("mqtt-topic");
+        String mqtt_set_topic = request->arg("mqtt-set-topic");
+        String mqtt_device_name = request->arg("mqtt-device-name");
 
         if (cfg.MQTTEnabled != mqtt_enabled) {
             cfg.MQTTEnabled = mqtt_enabled;
@@ -1079,43 +1034,43 @@ void setup() {
             saveConfig(true);
             handleReboot();
         } else {
-            webServer.send(200, "text/html", "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/settings.htm\"/></head><body></body>");
+            request->send(200, "text/html", "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/settings.htm\"/></head><body></body>");
         }
         });
 
-    webServer.on("/reset", HTTP_POST, []() {
+    webServer.on("/reset", HTTP_POST, [](AsyncWebServerRequest * request) {
 
         // delete EEPROM settings
-        if (webServer.arg("type") == String("all")) {
+        if (request->arg("type") == String("all")) {
             resetConfig();
             SERIAL_DEBUG_LN("Resetting config")
         }
 
         // delete wireless config
-        if (webServer.arg("type") == String("wifi") || webServer.arg("type") == String("all")) {
+        if (request->arg("type") == String("wifi") || request->arg("type") == String("all")) {
             setWiFiConf(String(""), String(""));
             SERIAL_DEBUG_LN("Resetting wifi settings");
         }
-        webServer.send(200, "text/html", "<html><head></head><body><font face='arial'><b><h2>Config reset finished. Device is rebooting now and you need to connect to the wireless again.</h2></b></font></body></html>");
+        request->send(200, "text/html", "<html><head></head><body><font face='arial'><b><h2>Config reset finished. Device is rebooting now and you need to connect to the wireless again.</h2></b></font></body></html>");
         delay(500);
         ESP.restart();
         });
 
-    webServer.on("/fieldValue", HTTP_GET, []() {
-        String name = webServer.arg("name");
+    webServer.on("/fieldValue", HTTP_GET, [](AsyncWebServerRequest * request) {
+        String name = request->arg("name");
         String value = getFieldValue(name, fields, fieldCount);
-        webServer.send(200, "text/json", value);
+        request->send(200, "text/json", value);
         });
 
-    webServer.on("/fieldValue", HTTP_POST, []() {
-        String name = webServer.arg("name");
-        String value = webServer.arg("value");
+    webServer.on("/fieldValue", HTTP_POST, [](AsyncWebServerRequest * request) {
+        String name = request->arg("name");
+        String value = request->arg("value");
         String newValue = setFieldValue(name, value, fields, fieldCount);
-        webServer.send(200, "text/json", newValue);
+        request->send(200, "text/json", newValue);
         });
 
-    webServer.on("/power", []() {
-        String value = webServer.arg("value");
+    webServer.on("/power", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         value.toLowerCase();
         if (value == String("1") || value == String("on")) {
             setPower(1);
@@ -1124,104 +1079,101 @@ void setup() {
         } else if (value == String("toggle")) {
             setPower((power == 1) ? 0 : 1);
         }
-        sendInt(power);
+        sendInt(power, request);
         });
 
-    webServer.on("/cooling", []() {
-        String value = webServer.arg("value");
+    webServer.on("/cooling", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         cooling = value.toInt();
         broadcastInt("cooling", cooling);
-        sendInt(cooling);
+        sendInt(cooling, request);
         });
 
-    webServer.on("/sparking", []() {
-        String value = webServer.arg("value");
+    webServer.on("/sparking", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         sparking = value.toInt();
         broadcastInt("sparking", sparking);
-        sendInt(sparking);
+        sendInt(sparking, request);
         });
 
-    webServer.on("/speed", []() {
-        String value = webServer.arg("value");
+    webServer.on("/speed", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setSpeed(value.toInt());
-        sendInt(speed);
+        sendInt(speed, request);
         });
 
-    webServer.on("/twinkleDensity", []() {
-        String value = webServer.arg("value");
+    webServer.on("/twinkleDensity", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         twinkleDensity = value.toInt();
         SERIAL_DEBUG_LNF("Setting: twinkle density %d", twinkleDensity)
         broadcastInt("twinkleDensity", twinkleDensity);
-        sendInt(twinkleDensity);
+        sendInt(twinkleDensity, request);
         });
 
-    webServer.on("/solidColor", []() {
-        String r = webServer.arg("r");
-        String g = webServer.arg("g");
-        String b = webServer.arg("b");
+    webServer.on("/solidColor", [](AsyncWebServerRequest * request) {
+        String r = request->arg("r");
+        String g = request->arg("g");
+        String b = request->arg("b");
         setSolidColor(r.toInt(), g.toInt(), b.toInt(), false);
 #ifdef ENABLE_ALEXA_SUPPORT
         alexa_main->setColor(r.toInt(), g.toInt(), b.toInt());
 #endif
-        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
+        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b), request);
         });
 
-    webServer.on("/hue", []() {
-        String value = webServer.arg("value");
+    webServer.on("/hue", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setSolidColorHue(value.toInt(), false);
 #ifdef ENABLE_ALEXA_SUPPORT
         alexa_main->setColor(solidColor.r, solidColor.g, solidColor.b);
 #endif
-        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
+        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b), request);
         });
 
-    webServer.on("/saturation", []() {
-        String value = webServer.arg("value");
+    webServer.on("/saturation", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setSolidColorSat(value.toInt(), false);
 #ifdef ENABLE_ALEXA_SUPPORT
         alexa_main->setColor(solidColor.r, solidColor.g, solidColor.b);
 #endif
-        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b));
+        sendString(String(solidColor.r) + "," + String(solidColor.g) + "," + String(solidColor.b), request);
         });
 
-    webServer.on("/pattern", []() {
-        String value = webServer.arg("value");
+    webServer.on("/pattern", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         #if LED_DEVICE_TYPE == 2
         switchedTimePattern = true;
         #endif
         setPattern(value.toInt());
-        sendInt(currentPatternIndex);
+        sendInt(currentPatternIndex, request);
         });
 
-    webServer.on("/patternName", []() {
-        String value = webServer.arg("value");
+    webServer.on("/patternName", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setPatternName(value);
-        sendInt(currentPatternIndex);
+        sendInt(currentPatternIndex, request);
         });
 
-    webServer.on("/palette", []() {
-        String value = webServer.arg("value");
+    webServer.on("/palette", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setPalette(value.toInt());
-        sendInt(currentPaletteIndex);
+        sendInt(currentPaletteIndex, request);
         });
 
-    webServer.on("/paletteName", []() {
-        String value = webServer.arg("value");
+    webServer.on("/paletteName", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setPaletteName(value);
-        sendInt(currentPaletteIndex);
+        sendInt(currentPaletteIndex, request);
         });
 
-    webServer.on("/brightness", []() {
-        String value = webServer.arg("value");
+    webServer.on("/brightness", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setBrightness(value.toInt());
-#ifdef ENABLE_ALEXA_SUPPORT
-        alexa_main->setValue(brightness);
-#endif
-        sendInt(brightness);
+        sendInt(brightness, request);
         });
 
-    webServer.on("/autoplay", []() {
-        String value = webServer.arg("value");
+    webServer.on("/autoplay", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         value.toLowerCase();
         if (value == String("1") || value == String("on")) {
             setAutoplay(1);
@@ -1230,13 +1182,13 @@ void setup() {
         } else if (value == String("toggle")) {
             setAutoplay((autoplay == 1) ? 0 : 1);
         }
-        sendInt(autoplay);
+        sendInt(autoplay, request);
         });
 
-    webServer.on("/autoplayDuration", []() {
-        String value = webServer.arg("value");
+    webServer.on("/autoplayDuration", [](AsyncWebServerRequest * request) {
+        String value = request->arg("value");
         setAutoplayDuration(value.toInt());
-        sendInt(autoplayDuration);
+        sendInt(autoplayDuration, request);
         });
 
 
@@ -1257,14 +1209,13 @@ void setup() {
         webServer.send(200, "text/plain", "");
         }, handleFileUpload);
         */
-    webServer.serveStatic("/", SPIFFS, "/", "max-age=86400");
+    webServer.serveStatic("/", SPIFFS, "/").setCacheControl("max-age=86400");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 
-#ifdef ENABLE_ALEXA_SUPPORT
-    espalexa.begin(&webServer);
-#endif
-#ifndef ENABLE_ALEXA_SUPPORT
+
     webServer.begin();
-#endif
 
     Serial.println("INFO: HTTP web server started");
 
@@ -1281,6 +1232,39 @@ void setup() {
 
 void loop() {
     yield();
+    if (!wifiManagerStarted)
+    {
+        ESPAsync_WiFiManager->begin("LED");
+        wifiManagerStarted = true;
+    }
+    ESPAsync_WiFiManager->run();
+    //return;
+        EVERY_N_SECONDS(5) {
+                heartBeat();
+                //int currentWifiStatus = wifiManager.getLastConxResult();
+
+        //         if (currentWifiStatus != WL_CONNECTED && !wifiMangerPortalRunning) {
+        //             SERIAL_DEBUG_LN("Trying to connect to Wifi")
+        //             wifiConnected = false;
+        //         }
+        //         if (currentWifiStatus == WL_CONNECTED && !wifiConnected) {
+        //             wifiConnected = true;
+        //             Serial.print("INFO: WiFi Connected! Open http://");
+        //             Serial.print(WiFi.localIP());
+        //             Serial.println(" in your browser");
+        //             //wifiManager.resetSettings();
+        // #ifdef ENABLE_MULTICAST_DNS
+        //             if (!MDNS.begin(cfg.hostname)) {
+        //                 Serial.println("\nERROR: problem while setting up MDNS responder! \n");
+        //             } else {
+        //                 Serial.printf("INFO: mDNS responder started. Try to open http://%s.local in your browser\n", cfg.hostname);
+        //                 MDNS.addService("http", "tcp", 80);
+        //             }
+        // #endif
+        //         }
+        }
+
+    //return;
     static unsigned int loop_counter = 0;
     static unsigned int current_fps = FRAMES_PER_SECOND;
     static unsigned int frame_delay = (1000 / FRAMES_PER_SECOND) * 1000; // in micro seconds
@@ -1296,11 +1280,6 @@ void loop() {
     // Add entropy to random number generator; we use a lot of it.
     random16_add_entropy(random(65535));
 
-#ifdef ENABLE_ALEXA_SUPPORT
-    espalexa.loop();
-#else
-    webServer.handleClient();
-#endif
 
     // reset wificonfig
     if (digitalRead(BUTTON_PIN) == LOW && !resetPressed)
@@ -1309,46 +1288,16 @@ void loop() {
       resetPressed = true;
       WiFi.disconnect();
       delay(1000);
-      wifiManager.resetSettings();
+      //wifiManager.resetSettings();
       delay(500);
       ESP.restart();
     }
     
-
-    if (wifiMangerPortalRunning) {
-        wifiManager.process();
-    }
-
 #ifdef ENABLE_HOMEY_SUPPORT
     Homey.loop();
 #endif
 
-    EVERY_N_SECONDS(1) {
-        int currentWifiStatus = wifiManager.getLastConxResult();
 
-        if (currentWifiStatus != WL_CONNECTED && !wifiMangerPortalRunning) {
-            SERIAL_DEBUG_LN("Trying to connect to Wifi")
-            wifiConnected = false;
-        }
-        if (currentWifiStatus == WL_CONNECTED && !wifiConnected) {
-            wifiConnected = true;
-            Serial.print("INFO: WiFi Connected! Open http://");
-            Serial.print(WiFi.localIP());
-            Serial.println(" in your browser");
-            //wifiManager.resetSettings();
-#ifdef ENABLE_MULTICAST_DNS
-            if (!MDNS.begin(cfg.hostname)) {
-                Serial.println("\nERROR: problem while setting up MDNS responder! \n");
-            } else {
-                Serial.printf("INFO: mDNS responder started. Try to open http://%s.local in your browser\n", cfg.hostname);
-                MDNS.addService("http", "tcp", 80);
-            }
-#endif
-        }
-#if defined(ENABLE_MULTICAST_DNS) && defined(ESP8266)
-        MDNS.update();
-#endif // ENABLE_MULTICAST_DNS
-    }
 
 #ifdef ENABLE_MQTT_SUPPORT
     static bool mqttConnected = false;
@@ -1566,41 +1515,33 @@ void loadConfig() {
 
 // ######################## web server functions #########################
 
+void handleReboot() {
+  //server.send(200, "text/html", getRebootString());
+  delay(500);
+  ESP.restart();
+}
+
 String getRebootString() {
     return "<html><head><meta http-equiv=\"refresh\" content=\"4; url=/\"/></head><body><font face='arial'><b><h2>Rebooting... returning in 4 seconds</h2></b></font></body></html>";
 }
 
-void handleReboot() {
-    webServer.send(200, "text/html", getRebootString());
-    delay(500);
-    ESP.restart();
-}
-
-#ifdef ENABLE_ALEXA_SUPPORT
-void handleReboot2() {
-    webServer2.send(200, "text/html", getRebootString());
-    delay(500);
-    ESP.restart();
-}
-#endif // ENABLE_ALEXA_SUPPORT
 
 void addRebootPage(int webServerNr) {
     if (webServerNr < 2) {
-        webServer.on("/reboot", handleReboot);
+        webServer.on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request) {
+            request->send(200, "text/html", getRebootString());
+            delay(500);
+            ESP.restart();
+        });
     }
-    #ifdef ENABLE_ALEXA_SUPPORT
-    else if (webServerNr == 2) {
-        webServer2.on("/reboot", handleReboot2);
-    }
-    #endif // ENABLE_ALEXA_SUPPORT
 }
 
-void sendInt(uint8_t value) {
-    sendString(String(value));
+void sendInt(uint8_t value, AsyncWebServerRequest * request) {
+    sendString(String(value), request);
 }
 
-void sendString(String value) {
-    webServer.send(200, "text/plain", value);
+void sendString(String value, AsyncWebServerRequest * request) {
+    request->send(200, "text/plain", value);
 }
 
 // These are old functions from previous websocket implementation
@@ -4378,256 +4319,7 @@ void logo()
 
 void logo_static()
 {
-#ifdef TWENTYONEPILOTS
-    twp_static();
-#endif // TWENTYONEPILOTS
-#ifdef THINGIVERSE
-    thingiverse_static();
-#endif
 }
-
-
-#ifdef TWENTYONEPILOTS
-void twp_static()
-{
-    fill_solid(leds + twpOffsets[1], DOUBLE_STRIP_LENGTH, STATIC_LOGO_COLOR);
-    fill_solid(leds + twpOffsets[2], DOT_LENGTH, STATIC_LOGO_COLOR);
-    fill_solid(leds + twpOffsets[3], ITALIC_STRIP_LENGTH, STATIC_LOGO_COLOR);
-    fill_solid(leds + twpOffsets[0], RING_LENGTH, STATIC_RING_COLOR);
-}
-
-void twp()  // twenty one pilots
-{
-    static uint8_t    numdots = 4; // Number of dots in use.
-    static uint8_t   faderate = 4; // How long should the trails be. Very low value = longer trails.
-    static uint8_t     hueinc = 255 / numdots - 1; // Incremental change in hue between each dot.
-    static uint8_t    thishue = 42; // Starting hue.
-    static uint8_t     curhue = 42; // The current hue
-    static uint8_t    thissat = 255; // Saturation of the colour.
-    static uint8_t thisbright = 255; // How bright should the LED/display be.
-    static uint8_t   basebeat = 5; // Higher = faster movement.
-
-    static uint8_t lastSecond = 99;  // Static variable, means it's only defined once. This is our 'debounce' variable.
-    uint8_t secondHand = (millis() / 1000) % ANIMATION_RING_DURATION; // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
-
-    if (lastSecond != secondHand) { // Debounce to make sure we're not repeating an assignment.
-        lastSecond = secondHand;
-        switch (secondHand) {
-        case  0: numdots = 1; basebeat = 20; hueinc = 2; faderate = 4; thishue = random(38, 42); break; // You can change values here, one at a time , or altogether.
-        case 10: numdots = 4; basebeat = 10; hueinc = 2; faderate = 8; thishue = random(37, 43); break;
-        case 20: numdots = 8; basebeat = 3; hueinc = 0; faderate = 8; thishue = random(37, 43); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
-        case 30: break;
-        }
-    }
-
-    // Several colored dots, weaving in and out of sync with each other
-    curhue = thishue; // Reset the hue values.
-    fadeToBlackBy(leds, NUM_LEDS, faderate);
-    for (int i = 0; i < numdots; i++) {
-        //leds[beatsin16(basebeat + i + numdots, 0, NUM_LEDS)] += CHSV(curhue, thissat, thisbright);
-        leds[beatsin16(basebeat + i + numdots, twpOffsets[0], RING_LENGTH + twpOffsets[0])] += CHSV(curhue, thissat, thisbright);
-        //leds[beatsin16(basebeat + i + numdots, twpOffsets[1], DOUBLE_STRIP_LENGTH + twpOffsets[1])] += CHSV(curhue, thissat, thisbright);
-        //leds[beatsin16(basebeat + i + numdots, twpOffsets[2], DOT_LENGTH + twpOffsets[1]+ twpOffsets[2])] += CHSV(curhue, thissat, thisbright);
-        //leds[beatsin16(basebeat + i + numdots, twpOffsets[3], ITALIC_STRIP_LENGTH + twpOffsets[1]+ twpOffsets[2]+ twpOffsets[3])] += CHSV(curhue, thissat, thisbright);
-        curhue += hueinc;
-    }
-
-    // sinelone for the lines
-    fadeToBlackBy(leds + twpOffsets[0], DOUBLE_STRIP_LENGTH + DOT_LENGTH + ITALIC_STRIP_LENGTH, 50);
-    int16_t myspeed = 30 + speed * 1.5;
-    if (myspeed > 255 || myspeed < 0)myspeed = 255;
-    int pos = beatsin16(myspeed, twpOffsets[1], twpOffsets[1] + DOUBLE_STRIP_LENGTH + DOT_LENGTH + ITALIC_STRIP_LENGTH - 1);
-    static int prevpos = 0;
-    CRGB color = STATIC_LOGO_COLOR;
-    if (pos < prevpos) {
-        fill_solid(leds + pos, (prevpos - pos) + 1, color);
-    }
-    else {
-        fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
-    }
-    prevpos = pos;
-}
-#endif // TWENTYONEPILOTS
-
-
-#ifdef THINGIVERSE
-void thingiverse_static()
-{
-    if (RINGFIRST)
-    {
-        fill_solid(leds, RING_LENGTH, STATIC_RING_COLOR);
-        fill_solid(leds + RING_LENGTH, HORIZONTAL_LENGTH, STATIC_LOGO_COLOR);
-        fill_solid(leds + RING_LENGTH + HORIZONTAL_LENGTH, VERTICAL_LENGTH, STATIC_LOGO_COLOR);
-    }
-    else
-    {
-        fill_solid(leds, HORIZONTAL_LENGTH, STATIC_LOGO_COLOR);
-        fill_solid(leds + HORIZONTAL_LENGTH, VERTICAL_LENGTH, STATIC_LOGO_COLOR);
-        fill_solid(leds + HORIZONTAL_LENGTH + VERTICAL_LENGTH, RING_LENGTH, STATIC_RING_COLOR);
-    }
-}
-
-void thingiverse()  // twenty one pilots
-{
-    static uint8_t    numdots = 4; // Number of dots in use.
-    static uint8_t   faderate = 4; // How long should the trails be. Very low value = longer trails.
-    static uint8_t     hueinc = 255 / numdots - 1; // Incremental change in hue between each dot.
-    static uint8_t    thishue = 82; // Starting hue.
-    static uint8_t     curhue = 82; // The current hue
-    static uint8_t    thissat = 255; // Saturation of the colour.
-    static uint8_t thisbright = 255; // How bright should the LED/display be.
-    static uint8_t   basebeat = 5; // Higher = faster movement.
-
-    static uint8_t lastSecond = 99;  // Static variable, means it's only defined once. This is our 'debounce' variable.
-    uint8_t secondHand = (millis() / 1000) % ANIMATION_RING_DURATION; // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
-
-    if (lastSecond != secondHand) { // Debounce to make sure we're not repeating an assignment.
-        lastSecond = secondHand;
-        switch (secondHand) {
-        case  0: numdots = 1; basebeat = 20; hueinc = 2; faderate = 4; thishue = random(143, 147); break; // You can change values here, one at a time , or altogether.
-        case 10: numdots = 4; basebeat = 10; hueinc = 2; faderate = 8; thishue = random(142, 148); break;
-        case 20: numdots = 8; basebeat = 3; hueinc = 0; faderate = 8; thishue = random(143, 147); break; // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
-        case 30: break;
-        }
-    }
-
-    // Several colored dots, weaving in and out of sync with each other
-    curhue = thishue; // Reset the hue values.
-    if (RINGFIRST)
-    {
-        fadeToBlackBy(leds, RING_LENGTH, faderate);
-    }
-    else fadeToBlackBy(leds + VERTICAL_LENGTH + HORIZONTAL_LENGTH, VERTICAL_LENGTH + HORIZONTAL_LENGTH + RING_LENGTH, faderate);
-    for (int i = 0; i < numdots; i++) {
-        if (RINGFIRST)leds[beatsin16(basebeat + i + numdots, 0, RING_LENGTH)] += CHSV(curhue, thissat, thisbright);
-        else leds[beatsin16(basebeat + i + numdots, VERTICAL_LENGTH + HORIZONTAL_LENGTH, RING_LENGTH + VERTICAL_LENGTH + HORIZONTAL_LENGTH)] += CHSV(curhue, thissat, thisbright);
-        curhue += hueinc;
-    }
-
-    // sinelone for the lines
-    /*
-    fadeToBlackBy(leds + twpOffsets[0], DOUBLE_STRIP_LENGTH + DOT_LENGTH + ITALIC_STRIP_LENGTH, 50);
-    int16_t myspeed = 30 + speed * 1.5;
-    if (myspeed > 255 || myspeed < 0)myspeed = 255;
-    int pos = beatsin16(myspeed, twpOffsets[1], twpOffsets[1] + DOUBLE_STRIP_LENGTH + DOT_LENGTH + ITALIC_STRIP_LENGTH - 1);
-    static int prevpos = 0;
-    CRGB color = STATIC_LOGO_COLOR;
-    if (pos < prevpos) {
-      fill_solid(leds + pos, (prevpos - pos) + 1, color);
-    }
-    else {
-      fill_solid(leds + prevpos, (pos - prevpos) + 1, color);
-    }
-    prevpos = pos;
-    */
-    //uint8_t b = beatsin8(10, 200, 255);
-
-    uint8_t pos = 0;
-    uint8_t spd = 100;
-    uint8_t b = 255;
-    bool even = true;
-    if ((HORIZONTAL_LENGTH / 2.00) > (int)(HORIZONTAL_LENGTH / 2.00))even = false;
-
-    if (!even)
-    {
-        // FIXME: This is BROKEN, beatsaw8 takes 5 arguments, 3 given here
-        //pos = beatsin8(spd, 0, VERTICAL_LENGTH + (HORIZONTAL_LENGTH - 1) / 2);
-        pos = beatsaw8(spd, 0, VERTICAL_LENGTH + (HORIZONTAL_LENGTH - 1) / 2);
-        b = beatsaw8(spd * 2, 255 / 2, 255);
-    }
-    else
-    {
-        //pos = beatsin8(spd, 0, VERTICAL_LENGTH + (HORIZONTAL_LENGTH - 2) / 2);
-    }
-    if (!even)
-    {
-        if (pos < VERTICAL_LENGTH)
-        {
-            if (HORIZONTAL_BEFORE_VERTICAL)
-            {
-                if (!RINGFIRST) leds[HORIZONTAL_LENGTH + VERTICAL_LENGTH - pos - 1] = CHSV(145, 255, b);
-                else { leds[HORIZONTAL_LENGTH + VERTICAL_LENGTH - pos - 1 + RING_LENGTH] = CHSV(145, 255, b); }
-            }
-            else
-            {
-                if (!RINGFIRST) leds[VERTICAL_LENGTH - pos - 1] = CHSV(145, 255, b);
-                else { leds[VERTICAL_LENGTH - pos - 1 + RING_LENGTH] = CHSV(145, 255, b); }
-            }
-        }
-        else if (pos == VERTICAL_LENGTH)
-        {
-            if (!RINGFIRST)
-            {
-                leds[(HORIZONTAL_LENGTH / 2)] = CHSV(145, 255, b);
-            }
-            else
-            {
-                leds[(HORIZONTAL_LENGTH / 2) + RING_LENGTH] = CHSV(145, 255, b);
-            }
-        }
-        else
-        {
-            if (HORIZONTAL_BEFORE_VERTICAL)
-            {
-                if (!RINGFIRST)
-                {
-                    leds[HORIZONTAL_LENGTH - pos] = CHSV(145, 255, b);
-                    leds[pos - 1] = CHSV(145, 255, b);
-                }
-                else
-                {
-                    leds[HORIZONTAL_LENGTH - pos + RING_LENGTH] = CHSV(145, 255, b);
-                    leds[pos - 1 + RING_LENGTH] = CHSV(145, 255, b);
-                }
-            }
-            else
-            {
-                if (!RINGFIRST)
-                {
-                    leds[HORIZONTAL_LENGTH - pos + VERTICAL_LENGTH] = CHSV(145, 255, b);
-                    leds[pos - 1 + VERTICAL_LENGTH] = CHSV(145, 255, b);
-                }
-                else
-                {
-                    leds[HORIZONTAL_LENGTH - pos + RING_LENGTH + VERTICAL_LENGTH] = CHSV(145, 255, b);
-                    leds[pos - 1 + RING_LENGTH + VERTICAL_LENGTH] = CHSV(145, 255, b);
-                }
-            }
-        }
-    }
-    if (!RINGFIRST)
-    {
-        //fadeToBlackBy(leds, HORIZONTAL_LENGTH + VERTICAL_LENGTH, 50);
-        fadeLightBy(leds, HORIZONTAL_LENGTH + VERTICAL_LENGTH, 5);
-    }
-    else
-    {
-        fadeLightBy(leds + RING_LENGTH, HORIZONTAL_LENGTH + VERTICAL_LENGTH, 5);
-    }
-
-    /*
-    uint8_t b = 255;
-    uint8_t pos = 0;
-    if (RINGFIRST)
-    {
-      pos = beatsin8(30, RING_LENGTH, RING_LENGTH + VERTICAL_LENGTH + HORIZONTAL_LENGTH);
-      fadeToBlackBy(leds + RING_LENGTH, RING_LENGTH+VERTICAL_LENGTH + HORIZONTAL_LENGTH, 10);
-
-    }
-    else
-    {
-      pos = beatsin8(30, 0, VERTICAL_LENGTH + HORIZONTAL_LENGTH);
-      fadeToBlackBy(leds, VERTICAL_LENGTH + HORIZONTAL_LENGTH, 10);
-
-    }
-    //if (pos == 0 && RINGFIRST == false)fadeToBlackBy(leds, 1, 50);
-    //else if(pos == RING_LENGTH && RINGFIRST == true)fadeToBlackBy(leds+RING_LENGTH, 1, 50);
-    leds[pos] = CHSV(145, 255, b);
-    */
-}
-#endif THINGIVERSE
-
-/*###################### LOGO FUNCTIONS END ######################*/
 
 //################## LEGACY Sound Reactive Sensor ################//
 #ifdef SOUND_SENSOR_SUPPORT
